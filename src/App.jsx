@@ -21,6 +21,8 @@ import {
 
 import Login from "./components/Login";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import InstallAppButton from "./components/InstallAppButton";
+import PwaUpdatePrompt from "./components/PwaUpdatePrompt";
 import { supabase } from "./lib/supabase";
 
 import AssetsPage from "./pages/AssetsPage";
@@ -119,6 +121,8 @@ function AppShell({ session, profile }) {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
+      <InstallAppButton />
+      <PwaUpdatePrompt />
       <aside className="fixed inset-y-0 left-0 hidden w-60 border-r border-slate-800 bg-slate-950 p-4 md:block">
         <div className="mb-6 px-2">
           <p className="text-sm text-blue-400">Alphamed</p>
@@ -307,12 +311,12 @@ function AppShell({ session, profile }) {
             }
           />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
 
           <Route path="/eqas-online" element={<EqasOnlinePage canEdit={canEdit} />} />
           <Route path="/eqas-online/new" element={<ProtectedRoute canEdit={canEdit}><NewEqasOnlinePage /></ProtectedRoute>} />
           <Route path="/eqas-online/:recordId/edit" element={<ProtectedRoute canEdit={canEdit}><EditEqasOnlinePage /></ProtectedRoute>} />
 
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </div>
