@@ -1,27 +1,14 @@
 import { useEffect, useState } from "react";
 import useUnsavedChanges from "../hooks/useUnsavedChanges";
 import { ArrowLeft, Trash2 } from "lucide-react";
-import {
-  Link,
-  useNavigate,
-  useParams,
-} from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   createCustomer,
   getCustomer,
   updateCustomer,
 } from "../services/customers";
 import { deleteCustomer } from "../services/deletions";
-
-const emirates = [
-  "Abu Dhabi",
-  "Dubai",
-  "Sharjah",
-  "Ajman",
-  "Umm Al Quwain",
-  "Ras Al Khaimah",
-  "Fujairah",
-];
+import { EMIRATES } from "../constants/locationOptions";
 
 const inputClass =
   "mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2";
@@ -52,9 +39,7 @@ export default function CustomerFormPage() {
           isActive: customer.is_active,
         })
       )
-      .catch((loadError) =>
-        setError(loadError.message)
-      );
+      .catch((loadError) => setError(loadError.message));
   }, [customerId, editing]);
 
   function patch(field, value) {
@@ -67,6 +52,7 @@ export default function CustomerFormPage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (saving) return;
 
     try {
       setSaving(true);
@@ -79,7 +65,9 @@ export default function CustomerFormPage() {
       }
 
       setDirty(false);
-      navigate("/customers", { state: { message: "Customer saved successfully." } });
+      navigate("/customers", {
+        state: { message: "Customer saved successfully." },
+      });
     } catch (saveError) {
       setError(saveError.message);
     } finally {
@@ -88,9 +76,12 @@ export default function CustomerFormPage() {
   }
 
   async function handleDelete() {
-    if (!window.confirm(
-      "Delete this customer permanently? Linked records may prevent deletion until they are reassigned."
-    )) {
+    if (
+      deleting ||
+      !window.confirm(
+        "Delete this customer permanently? Linked records may prevent deletion until they are reassigned."
+      )
+    ) {
       return;
     }
 
@@ -99,11 +90,11 @@ export default function CustomerFormPage() {
       setError("");
       await deleteCustomer(customerId);
       setDirty(false);
-      navigate("/customers", { state: { message: "Customer saved successfully." } });
+      navigate("/customers", {
+        state: { message: "Customer deleted successfully." },
+      });
     } catch (deleteError) {
-      setError(
-        deleteError.message || "Unable to delete customer."
-      );
+      setError(deleteError.message || "Unable to delete customer.");
     } finally {
       setDeleting(false);
     }
@@ -113,6 +104,9 @@ export default function CustomerFormPage() {
     <div className="mx-auto max-w-2xl space-y-5">
       <Link
         to="/customers"
+        onClick={(event) => {
+          if (!confirmDiscard()) event.preventDefault();
+        }}
         className="inline-flex items-center gap-2 text-slate-400"
       >
         <ArrowLeft size={18} />
@@ -123,9 +117,7 @@ export default function CustomerFormPage() {
         {editing ? "Edit customer" : "New customer"}
       </h1>
 
-      {error && (
-        <div className="text-red-300">{error}</div>
-      )}
+      {error && <div className="text-red-300">{error}</div>}
 
       <form
         onSubmit={handleSubmit}
@@ -137,9 +129,7 @@ export default function CustomerFormPage() {
             required
             className={inputClass}
             value={values.customerName}
-            onChange={(event) =>
-              patch("customerName", event.target.value)
-            }
+            onChange={(event) => patch("customerName", event.target.value)}
           />
         </label>
 
@@ -148,12 +138,10 @@ export default function CustomerFormPage() {
           <select
             className={inputClass}
             value={values.emirate}
-            onChange={(event) =>
-              patch("emirate", event.target.value)
-            }
+            onChange={(event) => patch("emirate", event.target.value)}
           >
             <option value="">Select Emirate</option>
-            {emirates.map((emirate) => (
+            {EMIRATES.map((emirate) => (
               <option key={emirate}>{emirate}</option>
             ))}
           </select>
@@ -163,9 +151,7 @@ export default function CustomerFormPage() {
           <input
             type="checkbox"
             checked={values.isActive}
-            onChange={(event) =>
-              patch("isActive", event.target.checked)
-            }
+            onChange={(event) => patch("isActive", event.target.checked)}
           />
           Active customer
         </label>
@@ -176,7 +162,7 @@ export default function CustomerFormPage() {
               type="button"
               onClick={handleDelete}
               disabled={deleting}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-800 px-4 py-2 text-red-300 hover:bg-red-950"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-800 px-4 py-2 text-red-300 hover:bg-red-950 disabled:opacity-60"
             >
               <Trash2 size={17} />
               {deleting ? "Deleting..." : "Delete customer"}
@@ -184,6 +170,9 @@ export default function CustomerFormPage() {
           ) : (
             <Link
               to="/customers"
+              onClick={(event) => {
+                if (!confirmDiscard()) event.preventDefault();
+              }}
               className="rounded-xl border border-slate-700 px-4 py-2 text-center"
             >
               Back to customers
@@ -193,7 +182,7 @@ export default function CustomerFormPage() {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-xl bg-blue-600 px-4 py-2 font-medium"
+            className="rounded-xl bg-blue-600 px-4 py-2 font-medium disabled:opacity-60"
           >
             {saving ? "Saving..." : "Save customer"}
           </button>

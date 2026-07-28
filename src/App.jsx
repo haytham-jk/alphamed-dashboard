@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import {
   BrowserRouter,
   Navigate,
@@ -25,31 +25,33 @@ import InstallAppButton from "./components/InstallAppButton";
 import PwaUpdatePrompt from "./components/PwaUpdatePrompt";
 import { supabase } from "./lib/supabase";
 
-import AssetsPage from "./pages/AssetsPage";
-import CaseDetailsPage from "./pages/CaseDetailsPage";
-import CasesPage from "./pages/CasesPage";
-import CustomerFormPage from "./pages/CustomerFormPage";
-import CustomersPage from "./pages/CustomersPage";
-import DashboardPage from "./pages/DashboardPage";
-import EditAssetPage from "./pages/EditAssetPage";
-import EditCasePage from "./pages/EditCasePage";
-import EditLinearityPage from "./pages/EditLinearityPage";
-import EditTrainingPage from "./pages/EditTrainingPage";
-import LinearityPage from "./pages/LinearityPage";
-import NewAssetPage from "./pages/NewAssetPage";
-import NewCasePage from "./pages/NewCasePage";
-import NewLinearityPage from "./pages/NewLinearityPage";
-import NewTrainingPage from "./pages/NewTrainingPage";
-import TrainingPage from "./pages/TrainingPage";
-import UnityRealTimePage from "./pages/UnityRealTimePage";
-import NewUnityRealTimePage from "./pages/NewUnityRealTimePage";
-import EditUnityRealTimePage from "./pages/EditUnityRealTimePage";
 import { ClipboardList } from "lucide-react";
-import EqasOnlinePage from "./pages/EqasOnlinePage";
-import NewEqasOnlinePage from "./pages/NewEqasOnlinePage";
-import EditEqasOnlinePage from "./pages/EditEqasOnlinePage";
 
 import { getCurrentProfile } from "./services/profile";
+import FlashMessage from "./components/ui/FlashMessage";
+
+const AssetsPage = lazy(() => import("./pages/AssetsPage"));
+const CaseDetailsPage = lazy(() => import("./pages/CaseDetailsPage"));
+const CasesPage = lazy(() => import("./pages/CasesPage"));
+const CustomerFormPage = lazy(() => import("./pages/CustomerFormPage"));
+const CustomersPage = lazy(() => import("./pages/CustomersPage"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const EditAssetPage = lazy(() => import("./pages/EditAssetPage"));
+const EditCasePage = lazy(() => import("./pages/EditCasePage"));
+const EditLinearityPage = lazy(() => import("./pages/EditLinearityPage"));
+const EditTrainingPage = lazy(() => import("./pages/EditTrainingPage"));
+const LinearityPage = lazy(() => import("./pages/LinearityPage"));
+const NewAssetPage = lazy(() => import("./pages/NewAssetPage"));
+const NewCasePage = lazy(() => import("./pages/NewCasePage"));
+const NewLinearityPage = lazy(() => import("./pages/NewLinearityPage"));
+const NewTrainingPage = lazy(() => import("./pages/NewTrainingPage"));
+const TrainingPage = lazy(() => import("./pages/TrainingPage"));
+const UnityRealTimePage = lazy(() => import("./pages/UnityRealTimePage"));
+const NewUnityRealTimePage = lazy(() => import("./pages/NewUnityRealTimePage"));
+const EditUnityRealTimePage = lazy(() => import("./pages/EditUnityRealTimePage"));
+const EqasOnlinePage = lazy(() => import("./pages/EqasOnlinePage"));
+const NewEqasOnlinePage = lazy(() => import("./pages/NewEqasOnlinePage"));
+const EditEqasOnlinePage = lazy(() => import("./pages/EditEqasOnlinePage"));
 
 function AppShell({ session, profile }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -184,7 +186,9 @@ function AppShell({ session, profile }) {
       )}
 
       <main className="p-4 md:ml-60 md:p-6">
-        <Routes>
+        <FlashMessage />
+          <Suspense fallback={<div className="flex min-h-48 items-center justify-center text-slate-400" role="status">Loading page...</div>}>
+          <Routes>
           <Route path="/" element={<DashboardPage canEdit={canEdit} />} />
 
           <Route path="/cases" element={<CasesPage canEdit={canEdit} />} />
@@ -311,13 +315,13 @@ function AppShell({ session, profile }) {
             }
           />
 
-
           <Route path="/eqas-online" element={<EqasOnlinePage canEdit={canEdit} />} />
           <Route path="/eqas-online/new" element={<ProtectedRoute canEdit={canEdit}><NewEqasOnlinePage /></ProtectedRoute>} />
           <Route path="/eqas-online/:recordId/edit" element={<ProtectedRoute canEdit={canEdit}><EditEqasOnlinePage /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </main>
     </div>
   );
@@ -353,7 +357,11 @@ export default function App() {
       try {
         const currentProfile = await getCurrentProfile(nextSession.user.id);
         if (mounted && profileRequestId.current === requestId) {
-          setProfile(currentProfile);
+          if (!currentProfile?.is_active) {
+          await supabase.auth.signOut();
+          throw new Error("Your account is inactive. Contact an administrator for access.");
+        }
+        setProfile(currentProfile);
         }
       } catch (profileError) {
         if (mounted && profileRequestId.current === requestId) {

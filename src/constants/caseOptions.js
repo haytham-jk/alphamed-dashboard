@@ -62,5 +62,12 @@ export function createEmptyCaseValues() {
   };
 }
 
-export const ACTIVE_CASE_STATUSES = ["New", "Pending", "In Progress", "Escalated"];
+export const ACTIVE_CASE_STATUSES = [
+  "New",
+  "Pending",
+  "In Progress",
+  "Escalated",
+  "Unresolved",
+];
+
 export const TERMINAL_CASE_STATUSES = ["Resolved", "Closed", "Cancelled"];

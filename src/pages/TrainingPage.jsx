@@ -4,8 +4,6 @@ import { Plus, RefreshCw, Search } from "lucide-react";
 import { getTrainingRecords } from "../services/training";
 import { formatDateOnly } from "../utils/dateDisplay";
 import PaginationControls from "../components/ui/PaginationControls";
-import FlashMessage from "../components/ui/FlashMessage";
-
 const PAGE_SIZE = 20;
 
 export default function TrainingPage({ canEdit }) {
@@ -111,7 +109,6 @@ export default function TrainingPage({ canEdit }) {
 
   return (
     <div className="space-y-5">
-      <FlashMessage />
 
       <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>

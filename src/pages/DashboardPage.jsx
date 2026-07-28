@@ -9,7 +9,6 @@ import {
 import { getSupportCases } from "../services/cases";
 import { getLinearityRecords } from "../services/linearity";
 import { ACTIVE_CASE_STATUSES } from "../constants/caseOptions";
-import { getDateUrgency } from "../utils/dateDisplay";
 import {
   calculateDaysRemaining,
   calculateNextDueDate,
@@ -76,10 +75,11 @@ export default function DashboardPage({ canEdit }) {
       unresolved: cases.filter(
         (item) => item.status === "Unresolved"
       ).length,
-      escalated: cases.filter(
+      escalated: activeCases.filter(
         (item) =>
-          item.escalatedTo !== "None" &&
-          ACTIVE_CASE_STATUSES.includes(item.status)
+          item.escalatedTo &&
+          item.escalatedTo.trim() !== "" &&
+          item.escalatedTo !== "None"
       ).length,
     };
   }, [cases, activeCases]);
@@ -162,7 +162,7 @@ export default function DashboardPage({ canEdit }) {
           tone="bg-orange-950 text-orange-300"
         />
         <DashboardCard
-          to="/cases?status=Active&escalated=true"
+          to="/cases?escalated=true"
           icon={ShieldAlert}
           label="Active escalations"
           value={metrics.escalated}

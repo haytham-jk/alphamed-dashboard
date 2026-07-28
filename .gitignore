@@ -1,56 +1,60 @@
 # Dependencies
 node_modules/
 
-# Build output
+# Production output
 dist/
-dist-ssr/
-build/
-out/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Local Supabase and tooling state
+.supabase/
 
 # Logs
-logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
-# Environment variables and local configuration
-.env
-.env.*
-!.env.example
-!.env.template
-*.local
-
-# Test output
-coverage/
-.nyc_output/
-
-# Tool and framework caches
-.vite/
-.cache/
-.parcel-cache/
-.eslintcache
-*.tsbuildinfo
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
+# Editors and operating systems
+.vscode/
 .idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-*~
-
-# Operating system files
 .DS_Store
 Thumbs.db
 
-# Temporary files
-tmp/
-temp/
-*.tmp
+# Test and coverage output
+coverage/
+
+# Temporary patch scripts and phase notes
+apply-*.mjs
+PHASE-*.md
+FINAL-PHASE-README.md
+FLASH-MESSAGE-FIX*.md
+ESCALATED-CARD-FIX*.md
+ACTIVE-ESCALATION-FILTER.md
+
+# Backups created during local patching
+*.bak
+*.phase*.bak
+*.flash-fix.bak
+*.final-phase.bak
+*.escalated-card*.bak
+*.escalation-filter.bak
+
+# Database data exports. Keep schema migrations under supabase/migrations.
+*_rows.sql
+support_cases_rows*.sql
+case_customers_rows*.sql
+instruments_rows*.sql
+linearity_records_rows*.sql
+
+# Local archives
+phase-*-changes.zip
+phase-*-fixed.zip
+final-phase-changes.zip
+flash-message-fix*.zip
+escalated-card-fix*.zip
+active-escalation-filter.zip

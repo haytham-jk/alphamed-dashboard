@@ -14,7 +14,6 @@ export default function NewEqasOnlinePage() {
   const [values, setValues] = useState({ customerId: "", labName: "", qcnetId: "", labNumber: "" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [dirty, setDirty] = useState(false);
   const { confirmDiscard } = useUnsavedChanges(dirty);

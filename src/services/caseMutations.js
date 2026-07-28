@@ -1,93 +1,96 @@
 import { supabase } from "../lib/supabase";
 
-function normalizePayload(values, userId) {
+function normalizeCaseCustomers(values) {
+  if (values.internalCase) {
+    return {
+      customerIds: [],
+      primaryCustomerId: "",
+    };
+  }
+
+  const customerIds = [
+    ...new Set(
+      (values.customerIds || [])
+        .map((customerId) =>
+          customerId === null || customerId === undefined
+            ? ""
+            : String(customerId)
+        )
+        .filter(Boolean)
+    ),
+  ];
+
+  const requestedPrimaryId =
+    values.primaryCustomerId === null ||
+    values.primaryCustomerId === undefined
+      ? ""
+      : String(values.primaryCustomerId);
+
+  const primaryCustomerId = customerIds.includes(requestedPrimaryId)
+    ? requestedPrimaryId
+    : customerIds[0] || "";
+
   return {
-    case_title: values.title.trim(),
-    issue_description: values.description.trim(),
-    source: values.source,
-    reported_by: values.reportedBy.trim() || null,
-    priority: values.priority,
-    status: values.status,
-    escalated_to: values.escalatedTo.trim() || null,
-    case_number: values.caseNumber.trim() || null,
-    related_issues: values.relatedIssues.trim() || null,
-    request_type: values.requestType || null,
-    progress: Number(values.progress) || 0,
-    case_created_on: values.caseCreatedOn,
-    next_action: values.nextAction.trim() || null,
-    waiting_on: values.waitingOn.trim() || null,
-    follow_up_date: values.followUpDate || null,
-    target_resolution_date: values.targetResolutionDate || null,
-    resolved_date: values.resolvedDate || null,
-    resolution_summary: values.resolutionSummary.trim() || null,
-    last_case_update: new Date().toISOString(),
-    updated_by: userId || null,
+    customerIds,
+    primaryCustomerId,
   };
 }
 
-async function replaceCaseCustomers(caseId, values) {
-  const { error: deleteError } = await supabase
-    .from("case_customers")
-    .delete()
-    .eq("support_case_id", caseId);
-
-  if (deleteError) throw deleteError;
-  if (values.internalCase || values.customerIds.length === 0) return;
-
-  const links = values.customerIds.map((customerId) => ({
-    support_case_id: Number(caseId),
-    customer_id: Number(customerId),
-    is_primary: Number(customerId) === Number(values.primaryCustomerId),
-  }));
-
-  const { error: insertError } = await supabase
-    .from("case_customers")
-    .insert(links);
-
-  if (insertError) throw insertError;
+function normalizeRpcValues(values) {
+  const customers = normalizeCaseCustomers(values);
+  return {
+    values: {
+      ...values,
+      ...customers,
+      source: [...new Set(values.source || [])],
+      progress: Number(values.progress) || 0,
+    },
+    customerIds: customers.customerIds.map(Number),
+    primaryCustomerId: customers.primaryCustomerId
+      ? Number(customers.primaryCustomerId)
+      : null,
+  };
 }
 
-export async function createSupportCase(values, userId) {
-  const primaryCustomerId = values.internalCase
-    ? null
-    : Number(values.primaryCustomerId) || null;
-
-  const { data, error } = await supabase
-    .from("support_cases")
-    .insert({
-      ...normalizePayload(values, userId),
-      customer_id: primaryCustomerId,
-    })
-    .select("id, case_reference")
-    .single();
-
-  if (error) throw error;
-
-  try {
-    await replaceCaseCustomers(data.id, values);
-  } catch (relationError) {
-    await supabase.from("support_cases").delete().eq("id", data.id);
-    throw relationError;
+function friendlyMutationError(error) {
+  if (error?.code === "22023" || error?.code === "23514") {
+    return new Error(error.message || "Check the case details and try again.");
   }
-
-  return data;
+  if (error?.code === "23503") {
+    return new Error(
+      "One of the selected customers is no longer available. Refresh the page and try again."
+    );
+  }
+  if (error?.code === "42501") {
+    return new Error("You do not have permission to save this case.");
+  }
+  return error;
 }
 
-export async function updateSupportCase(caseId, values, userId) {
-  const primaryCustomerId = values.internalCase
-    ? null
-    : Number(values.primaryCustomerId) || null;
+export async function createSupportCase(values) {
+  const normalized = normalizeRpcValues(values);
+  const { data, error } = await supabase.rpc("create_support_case_atomic", {
+    p_values: normalized.values,
+    p_customer_ids: normalized.customerIds,
+    p_primary_customer_id: normalized.primaryCustomerId,
+  });
 
-  const { error } = await supabase
-    .from("support_cases")
-    .update({
-      ...normalizePayload(values, userId),
-      customer_id: primaryCustomerId,
-    })
-    .eq("id", Number(caseId));
+  if (error) throw friendlyMutationError(error);
+  const created = Array.isArray(data) ? data[0] : data;
+  if (!created?.id) throw new Error("The case was saved but no case ID was returned.");
+  return created;
+}
 
-  if (error) throw error;
-  await replaceCaseCustomers(caseId, values);
+export async function updateSupportCase(caseId, values) {
+  const normalized = normalizeRpcValues(values);
+  const { error } = await supabase.rpc("update_support_case_atomic", {
+    p_case_id: Number(caseId),
+    p_values: normalized.values,
+    p_customer_ids: normalized.customerIds,
+    p_primary_customer_id: normalized.primaryCustomerId,
+  });
+
+  if (error) throw friendlyMutationError(error);
 }
 
 export async function getSupportCaseForEdit(caseId) {

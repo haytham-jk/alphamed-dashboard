@@ -6,20 +6,10 @@ import DatePickerInput from "../components/ui/DatePickerInput";
 import { getCustomerOptions } from "../services/customers";
 import { getAsset, updateAsset } from "../services/assets";
 import { deleteAsset } from "../services/deletions";
+import { INSTRUMENT_TYPES } from "../constants/instrumentOptions";
 
 const inputClass =
   "mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/30";
-
-const instrumentTypes = [
-  "Bio-Rad D10",
-  "Bio-Rad D100",
-  "Bio-Rad Variant II",
-  "Bio-Rad Variant Turbo",
-  "Bio-Rad Vnbs",
-  "Bioplex 2200",
-  "Geenius",
-  "Other",
-];
 
 export default function EditAssetPage() {
   const { assetId } = useParams();
@@ -36,17 +26,11 @@ export default function EditAssetPage() {
     Promise.all([getCustomerOptions(), getAsset(assetId)])
       .then(([customerOptions, asset]) => {
         setCustomers(customerOptions);
-        const knownType = instrumentTypes.includes(
-          asset.instrument_name
-        );
+        const knownType = INSTRUMENT_TYPES.includes(asset.instrument_name);
         setValues({
           customerId: String(asset.customer_id || ""),
-          instrumentType: knownType
-            ? asset.instrument_name
-            : "Other",
-          customInstrumentName: knownType
-            ? ""
-            : asset.instrument_name || "",
+          instrumentType: knownType ? asset.instrument_name : "Other",
+          customInstrumentName: knownType ? "" : asset.instrument_name || "",
           serialNumber: asset.serial_number || "",
           installationDate: asset.installation_date || "",
           isActive: asset.is_active,
@@ -70,6 +54,8 @@ export default function EditAssetPage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (saving) return;
+
     try {
       setSaving(true);
       setError("");
@@ -78,7 +64,9 @@ export default function EditAssetPage() {
         instrumentName,
       });
       setDirty(false);
-      navigate("/assets", { state: { message: "Asset saved successfully." } });
+      navigate("/assets", {
+        state: { message: "Asset saved successfully." },
+      });
     } catch (saveError) {
       setError(saveError.message || "Unable to update asset.");
     } finally {
@@ -87,17 +75,23 @@ export default function EditAssetPage() {
   }
 
   async function handleDelete() {
-    const confirmed = window.confirm(
-      "Delete this asset permanently? Existing training and linearity records may retain snapshot information but lose the asset link."
-    );
-    if (!confirmed) return;
+    if (
+      deleting ||
+      !window.confirm(
+        "Delete this asset permanently? Existing training and linearity records may retain snapshot information but lose the asset link."
+      )
+    ) {
+      return;
+    }
 
     try {
       setDeleting(true);
       setError("");
       await deleteAsset(assetId);
       setDirty(false);
-      navigate("/assets", { state: { message: "Asset saved successfully." } });
+      navigate("/assets", {
+        state: { message: "Asset deleted successfully." },
+      });
     } catch (deleteError) {
       setError(deleteError.message || "Unable to delete asset.");
     } finally {
@@ -113,6 +107,9 @@ export default function EditAssetPage() {
     <div className="mx-auto max-w-3xl space-y-5">
       <Link
         to="/assets"
+        onClick={(event) => {
+          if (!confirmDiscard()) event.preventDefault();
+        }}
         className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white"
       >
         <ArrowLeft size={18} />
@@ -139,9 +136,7 @@ export default function EditAssetPage() {
           <select
             className={inputClass}
             value={values.customerId}
-            onChange={(event) =>
-              patch("customerId", event.target.value)
-            }
+            onChange={(event) => patch("customerId", event.target.value)}
           >
             <option value="">Unused or unassigned</option>
             {customers.map((customer) => (
@@ -158,11 +153,9 @@ export default function EditAssetPage() {
             required
             className={inputClass}
             value={values.instrumentType}
-            onChange={(event) =>
-              patch("instrumentType", event.target.value)
-            }
+            onChange={(event) => patch("instrumentType", event.target.value)}
           >
-            {instrumentTypes.map((type) => (
+            {INSTRUMENT_TYPES.map((type) => (
               <option key={type}>{type}</option>
             ))}
           </select>
@@ -187,9 +180,7 @@ export default function EditAssetPage() {
           <input
             className={inputClass}
             value={values.serialNumber}
-            onChange={(event) =>
-              patch("serialNumber", event.target.value)
-            }
+            onChange={(event) => patch("serialNumber", event.target.value)}
           />
         </label>
 
@@ -210,9 +201,7 @@ export default function EditAssetPage() {
           <input
             type="checkbox"
             checked={values.isActive}
-            onChange={(event) =>
-              patch("isActive", event.target.checked)
-            }
+            onChange={(event) => patch("isActive", event.target.checked)}
           />
           Active instrument
         </label>
@@ -241,6 +230,9 @@ export default function EditAssetPage() {
           <div className="flex justify-end gap-3">
             <Link
               to="/assets"
+              onClick={(event) => {
+                if (!confirmDiscard()) event.preventDefault();
+              }}
               className="rounded-xl border border-slate-700 px-4 py-2"
             >
               Cancel

@@ -9,8 +9,6 @@ import {
 } from "../constants/caseOptions";
 import { getDateUrgency } from "../utils/dateDisplay";
 import PaginationControls from "../components/ui/PaginationControls";
-import FlashMessage from "../components/ui/FlashMessage";
-
 const PAGE_SIZE = 20;
 const STATUS_FILTERS = ["All", "Active", ...CASE_STATUSES];
 
@@ -92,6 +90,7 @@ export default function CasesPage({ canEdit }) {
 
   const query = searchParams.get("q") || "";
   const status = validStatus(searchParams.get("status") || "Active");
+  const escalatedOnly = searchParams.get("escalated") === "true";
   const sort = searchParams.get("sort") || "priority";
   const groupBy =
     searchParams.get("group") === "priority" ? "priority" : "none";
@@ -99,6 +98,7 @@ export default function CasesPage({ canEdit }) {
 
   function updateFilters(changes) {
     const next = new URLSearchParams(searchParams);
+    if ("status" in changes) next.delete("escalated");
 
     Object.entries(changes).forEach(([key, value]) => {
       const shouldDelete =
@@ -155,7 +155,14 @@ export default function CasesPage({ canEdit }) {
           ACTIVE_CASE_STATUSES.includes(record.status)) ||
         record.status === status;
 
-      return matchesSearch && matchesStatus;
+      const escalationTarget = String(record.escalatedTo || "").trim();
+      const matchesEscalation =
+        !escalatedOnly ||
+        (ACTIVE_CASE_STATUSES.includes(record.status) &&
+          escalationTarget !== "" &&
+          escalationTarget !== "None");
+
+      return matchesSearch && matchesStatus && matchesEscalation;
     });
 
     return [...result].sort((first, second) => {
@@ -189,7 +196,7 @@ export default function CasesPage({ canEdit }) {
         (priorityRank[second.priority] ?? 99)
       );
     });
-  }, [cases, query, sort, status]);
+  }, [cases, escalatedOnly, query, sort, status]);
 
   const pageCount = Math.max(1, Math.ceil(filteredCases.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
@@ -226,7 +233,6 @@ export default function CasesPage({ canEdit }) {
 
   return (
     <div className="space-y-5">
-      <FlashMessage />
 
       <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>

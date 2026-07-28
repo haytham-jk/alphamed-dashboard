@@ -43,7 +43,7 @@ export async function getTrainingRecord(recordId) {
   return data;
 }
 
-function trainingPayload(values, userId) {
+function trainingPayload(values) {
   return {
     customer_id: Number(values.customerId),
     instrument_id: values.instrumentId
@@ -55,22 +55,19 @@ function trainingPayload(values, userId) {
       .split(",")
       .map((name) => name.trim())
       .filter(Boolean),
-    instrument_name_snapshot:
-      values.instrumentName.trim() || null,
-    serial_number_snapshot:
-      values.serialNumber.trim() || null,
+    instrument_name_snapshot: values.instrumentName.trim() || null,
+    serial_number_snapshot: values.serialNumber.trim() || null,
     notes: values.notes.trim() || null,
-    created_by: userId || null,
   };
 }
 
-export async function createTrainingRecord(
-  values,
-  userId
-) {
+export async function createTrainingRecord(values, userId) {
   const { data, error } = await supabase
     .from("training_records")
-    .insert(trainingPayload(values, userId))
+    .insert({
+      ...trainingPayload(values),
+      created_by: userId || null,
+    })
     .select("id")
     .single();
 
@@ -78,14 +75,10 @@ export async function createTrainingRecord(
   return data;
 }
 
-export async function updateTrainingRecord(
-  recordId,
-  values,
-  userId
-) {
+export async function updateTrainingRecord(recordId, values) {
   const { error } = await supabase
     .from("training_records")
-    .update(trainingPayload(values, userId))
+    .update(trainingPayload(values))
     .eq("id", Number(recordId));
 
   if (error) throw error;

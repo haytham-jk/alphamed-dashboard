@@ -41,6 +41,7 @@ export default function NewTrainingPage({ session }) {
   }
 
   async function handleCustomerChange(customerId) {
+    setDirty(true);
     setValues((current) => ({
       ...current,
       customerId,
@@ -64,6 +65,7 @@ export default function NewTrainingPage({ session }) {
   }
 
   function handleInstrumentChange(instrumentId) {
+    setDirty(true);
     const selected = instruments.find(
       (instrument) =>
         String(instrument.id) === String(instrumentId)
@@ -100,6 +102,9 @@ export default function NewTrainingPage({ session }) {
     <div className="mx-auto max-w-4xl space-y-5">
       <Link
         to="/training"
+        onClick={(event) => {
+          if (!confirmDiscard()) event.preventDefault();
+        }}
         className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white"
       >
         <ArrowLeft size={18} />
@@ -241,6 +246,9 @@ export default function NewTrainingPage({ session }) {
         <div className="flex justify-end gap-3 md:col-span-2">
           <Link
             to="/training"
+            onClick={(event) => {
+              if (!confirmDiscard()) event.preventDefault();
+            }}
             className="rounded-xl border border-slate-700 px-4 py-2"
           >
             Cancel

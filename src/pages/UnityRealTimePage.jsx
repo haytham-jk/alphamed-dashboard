@@ -9,7 +9,6 @@ import {
   Search,
   Server,
 } from "lucide-react";
-import FlashMessage from "../components/ui/FlashMessage";
 import PaginationControls from "../components/ui/PaginationControls";
 import { getUnityRtInstallations } from "../services/unityRealTime";
 
@@ -210,7 +209,6 @@ export default function UnityRealTimePage({ canEdit }) {
 
   return (
     <div className="space-y-5">
-      <FlashMessage />
 
       {copyMessage && (
         <div

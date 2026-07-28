@@ -5,20 +5,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { createAsset } from "../services/assets";
 import { getCustomerOptions } from "../services/customers";
 import DatePickerInput from "../components/ui/DatePickerInput";
+import { INSTRUMENT_TYPES } from "../constants/instrumentOptions";
 
 const inputClass =
   "mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/30";
-
-const instrumentTypes = [
-  "Bio-Rad D10",
-  "Bio-Rad D100",
-  "Bio-Rad Variant II",
-  "Bio-Rad Variant Turbo",
-  "Bio-Rad Vnbs",
-  "Bioplex 2200",
-  "Geenius",
-  "Other",
-];
 
 export default function NewAssetPage() {
   const navigate = useNavigate();
@@ -107,7 +97,7 @@ export default function NewAssetPage() {
           Instrument type
           <select required className={inputClass} value={values.instrumentType} onChange={(event) => patch("instrumentType", event.target.value)}>
             <option value="">Select instrument type</option>
-            {instrumentTypes.map((instrument) => (
+            {INSTRUMENT_TYPES.map((instrument) => (
               <option key={instrument}>{instrument}</option>
             ))}
           </select>

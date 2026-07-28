@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Copy, Plus, Search } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import FlashMessage from "../components/ui/FlashMessage";
 import PaginationControls from "../components/ui/PaginationControls";
 import { getEqasOnlineRecords } from "../services/eqasOnline";
 
@@ -65,7 +64,6 @@ export default function EqasOnlinePage({ canEdit }) {
 
   return (
     <div className="space-y-5">
-      <FlashMessage />
       {copyMessage && <div role="status" aria-live="polite" className="fixed right-5 top-5 z-50 inline-flex items-center gap-2 rounded-xl border border-emerald-800 bg-emerald-950 px-4 py-3 text-sm font-medium text-emerald-300 shadow-xl"><CheckCircle2 size={18} />{copyMessage}</div>}
       <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div><p className="text-sm text-blue-400">Online quality assurance</p><h1 className="text-3xl font-semibold">EQAS Online</h1><p className="mt-2 text-slate-400">Manage customer QCnet IDs and assigned Lab Numbers.</p></div>

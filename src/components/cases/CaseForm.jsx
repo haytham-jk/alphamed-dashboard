@@ -11,6 +11,7 @@ import {
   REQUEST_TYPES,
   SOURCE_OPTIONS,
 } from "../../constants/caseOptions";
+import { normalizeCaseFormValues } from "../../utils/caseFormHelpers";
 import { validateCase } from "../../utils/caseValidation";
 
 const escalationOptions = [
@@ -28,12 +29,10 @@ const inputClass =
 function Field({ label, error, className = "", children }) {
   return (
     <label className={className}>
-      <span className="mb-2 block text-sm font-medium">
-        {label}
-      </span>
+      <span className="mb-2 block text-sm font-medium">{label}</span>
       {children}
       {error && (
-        <span className="mt-1 block text-sm text-red-400">
+        <span className="mt-1 block text-sm text-red-300" role="alert">
           {error}
         </span>
       )}
@@ -47,6 +46,7 @@ export default function CaseForm({
   customers,
   onSubmit,
   onCancel,
+  onDirtyChange,
 }) {
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
@@ -58,34 +58,33 @@ export default function CaseForm({
   }, [initialValues]);
 
   const showResolution = useMemo(
-    () =>
-      ["Resolved", "Closed", "Cancelled"].includes(
-        values.status
-      ),
+    () => ["Resolved", "Closed", "Cancelled"].includes(values.status),
     [values.status]
   );
 
   function patch(changes) {
     setValues((current) => ({ ...current, ...changes }));
+    onDirtyChange?.(true);
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
-    const nextErrors = validateCase(values);
+    if (saving) return;
+
+    const normalizedValues = normalizeCaseFormValues(values);
+    const nextErrors = validateCase(normalizedValues);
+
+    setValues(normalizedValues);
     setErrors(nextErrors);
 
-    if (Object.keys(nextErrors).length > 0) {
-      return;
-    }
+    if (Object.keys(nextErrors).length > 0) return;
 
     try {
       setSaving(true);
       setSubmitError("");
-      await onSubmit(values);
+      await onSubmit(normalizedValues);
     } catch (error) {
-      setSubmitError(
-        error?.message || "Unable to save the case."
-      );
+      setSubmitError(error?.message || "Unable to save the case.");
     } finally {
       setSaving(false);
     }
@@ -94,98 +93,90 @@ export default function CaseForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <CaseFormSection
-        title="Case information"
-        description="Capture the core issue and workflow status."
+        title="Case overview"
+        description="Record the issue, priority, status, and request type."
       >
-        <Field
-          label="Case title"
-          error={errors.title}
-          className="md:col-span-2"
-        >
-          <input
-            className={inputClass}
-            value={values.title}
-            onChange={(event) =>
-              patch({ title: event.target.value })
-            }
-          />
-        </Field>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Case title" error={errors.title} className="md:col-span-2">
+            <input
+              required
+              className={inputClass}
+              value={values.title}
+              onChange={(event) => patch({ title: event.target.value })}
+            />
+          </Field>
 
-        <Field
-          label="Issue description"
-          error={errors.description}
-          className="md:col-span-2"
-        >
-          <textarea
-            rows={6}
-            className={inputClass}
-            value={values.description}
-            onChange={(event) =>
-              patch({ description: event.target.value })
-            }
-          />
-        </Field>
-
-        <Field label="Priority">
-          <select
-            className={inputClass}
-            value={values.priority}
-            onChange={(event) =>
-              patch({ priority: event.target.value })
-            }
+          <Field
+            label="Issue description"
+            error={errors.description}
+            className="md:col-span-2"
           >
-            {CASE_PRIORITIES.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-        </Field>
+            <textarea
+              required
+              rows={6}
+              className={inputClass}
+              value={values.description}
+              onChange={(event) => patch({ description: event.target.value })}
+            />
+          </Field>
 
-        <Field label="Status">
-          <select
-            className={inputClass}
-            value={values.status}
-            onChange={(event) =>
-              patch({ status: event.target.value })
-            }
-          >
-            {CASE_STATUSES.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-        </Field>
+          <Field label="Priority" error={errors.priority}>
+            <select
+              className={inputClass}
+              value={values.priority}
+              onChange={(event) => patch({ priority: event.target.value })}
+            >
+              {CASE_PRIORITIES.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </Field>
 
-        <Field label="Request type">
-          <select
-            className={inputClass}
-            value={values.requestType}
-            onChange={(event) =>
-              patch({ requestType: event.target.value })
-            }
-          >
-            {REQUEST_TYPES.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-        </Field>
+          <Field label="Status" error={errors.status}>
+            <select
+              className={inputClass}
+              value={values.status}
+              onChange={(event) => patch({ status: event.target.value })}
+            >
+              {CASE_STATUSES.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </Field>
 
-        <Field
-          label="Case created on"
-          error={errors.caseCreatedOn}
-        >
-          <DatePickerInput
-            value={values.caseCreatedOn}
-            onChange={(event) =>
-              patch({ caseCreatedOn: event.target.value })
-            }
-            required
-            ariaLabel="Choose case created date"
-          />
-        </Field>
+          <Field label="Request type">
+            <select
+              className={inputClass}
+              value={values.requestType}
+              onChange={(event) => patch({ requestType: event.target.value })}
+            >
+              {REQUEST_TYPES.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Case created on" error={errors.caseCreatedOn}>
+            <DatePickerInput
+              value={values.caseCreatedOn}
+              onChange={(event) => patch({ caseCreatedOn: event.target.value })}
+              required
+              ariaLabel="Choose case created date"
+              invalid={Boolean(errors.caseCreatedOn)}
+            />
+          </Field>
+        </div>
       </CaseFormSection>
 
       <CaseFormSection
         title="Customers"
-        description="Select one or more customers and mark one as primary."
+        description="Choose one or more customers and identify the primary customer."
       >
         <CaseCustomerSelector
           customers={customers}
@@ -197,170 +188,175 @@ export default function CaseForm({
         />
       </CaseFormSection>
 
-      <CaseFormSection title="Product and source">
-        <CaseSourceSelector
-          options={SOURCE_OPTIONS}
-          value={values.source}
-          onChange={(source) => patch({ source })}
-        />
-      </CaseFormSection>
-
-      <CaseFormSection title="Reporting and escalation">
-        <Field label="Reported by">
-          <input
-            className={inputClass}
-            value={values.reportedBy}
-            onChange={(event) =>
-              patch({ reportedBy: event.target.value })
-            }
+      <CaseFormSection
+        title="Source and escalation"
+        description="Identify the product areas, reporter, and escalation destination."
+      >
+        <div className="space-y-4">
+          <CaseSourceSelector
+            options={SOURCE_OPTIONS}
+            value={values.source}
+            onChange={(source) => patch({ source })}
           />
-        </Field>
 
-        <Field label="Escalated to">
-          <select
-            className={inputClass}
-            value={values.escalatedTo}
-            onChange={(event) =>
-              patch({ escalatedTo: event.target.value })
-            }
-          >
-            {escalationOptions.map((item) => (
-              <option key={item || "none"} value={item}>
-                {item || "Not escalated"}
-              </option>
-            ))}
-          </select>
-        </Field>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Reported by">
+              <input
+                className={inputClass}
+                value={values.reportedBy}
+                onChange={(event) => patch({ reportedBy: event.target.value })}
+              />
+            </Field>
 
-        <Field label="External case number">
-          <input
-            className={inputClass}
-            value={values.caseNumber}
-            onChange={(event) =>
-              patch({ caseNumber: event.target.value })
-            }
-          />
-        </Field>
+            <Field label="Escalated to">
+              <select
+                className={inputClass}
+                value={values.escalatedTo}
+                onChange={(event) => patch({ escalatedTo: event.target.value })}
+              >
+                {escalationOptions.map((item) => (
+                  <option key={item || "none"} value={item}>
+                    {item || "Not escalated"}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Case number">
+              <input
+                className={inputClass}
+                value={values.caseNumber}
+                onChange={(event) => patch({ caseNumber: event.target.value })}
+              />
+            </Field>
+
+            <Field label="Related issues">
+              <input
+                className={inputClass}
+                value={values.relatedIssues}
+                onChange={(event) => patch({ relatedIssues: event.target.value })}
+              />
+            </Field>
+          </div>
+        </div>
       </CaseFormSection>
 
       <CaseFormSection
-        title="Workflow"
-        description="Track next actions and important dates."
+        title="Progress and follow-up"
+        description="Record the current progress, next action, and target dates."
       >
-        <Field label="Progress percentage">
-          <input
-            type="number"
-            min="0"
-            max="100"
-            className={inputClass}
-            value={values.progress}
-            onChange={(event) =>
-              patch({ progress: event.target.value })
-            }
-          />
-        </Field>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Progress (%)" error={errors.progress}>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              className={inputClass}
+              value={values.progress}
+              onChange={(event) => patch({ progress: event.target.value })}
+            />
+          </Field>
 
-        <Field label="Waiting on">
-          <input
-            className={inputClass}
-            value={values.waitingOn}
-            onChange={(event) =>
-              patch({ waitingOn: event.target.value })
-            }
-          />
-        </Field>
+          <Field label="Waiting on">
+            <input
+              className={inputClass}
+              value={values.waitingOn}
+              onChange={(event) => patch({ waitingOn: event.target.value })}
+            />
+          </Field>
 
-        <Field label="Next action" className="md:col-span-2">
-          <textarea
-            rows={3}
-            className={inputClass}
-            value={values.nextAction}
-            onChange={(event) =>
-              patch({ nextAction: event.target.value })
-            }
-          />
-        </Field>
+          <Field label="Next action" className="md:col-span-2">
+            <textarea
+              rows={3}
+              className={inputClass}
+              value={values.nextAction}
+              onChange={(event) => patch({ nextAction: event.target.value })}
+            />
+          </Field>
 
-        <Field label="Follow-up date">
-          <DatePickerInput
-            value={values.followUpDate}
-            onChange={(event) =>
-              patch({ followUpDate: event.target.value })
-            }
-            ariaLabel="Choose follow-up date"
-          />
-        </Field>
+          <Field label="Follow-up date">
+            <DatePickerInput
+              value={values.followUpDate}
+              onChange={(event) => patch({ followUpDate: event.target.value })}
+              ariaLabel="Choose follow-up date"
+            />
+          </Field>
 
-        <Field label="Target resolution date">
-          <DatePickerInput
-            value={values.targetResolutionDate}
-            onChange={(event) =>
-              patch({
-                targetResolutionDate: event.target.value,
-              })
-            }
-            ariaLabel="Choose target resolution date"
-          />
-        </Field>
+          <Field label="Target resolution date">
+            <DatePickerInput
+              value={values.targetResolutionDate}
+              onChange={(event) =>
+                patch({ targetResolutionDate: event.target.value })
+              }
+              ariaLabel="Choose target resolution date"
+            />
+          </Field>
+        </div>
       </CaseFormSection>
 
       {showResolution && (
-        <CaseFormSection title="Resolution">
-          <Field
-            label="Resolved date"
-            error={errors.resolvedDate}
-          >
-            <DatePickerInput
-              value={values.resolvedDate}
-              onChange={(event) =>
-                patch({ resolvedDate: event.target.value })
-              }
-              ariaLabel="Choose resolved date"
-            />
-          </Field>
+        <CaseFormSection
+          title={values.status === "Cancelled" ? "Cancellation" : "Resolution"}
+          description="Terminal cases require a date and summary."
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field
+              label={values.status === "Cancelled" ? "Cancellation date" : "Resolved date"}
+              error={errors.resolvedDate}
+            >
+              <DatePickerInput
+                value={values.resolvedDate}
+                onChange={(event) => patch({ resolvedDate: event.target.value })}
+                ariaLabel="Choose resolved date"
+                invalid={Boolean(errors.resolvedDate)}
+              />
+            </Field>
 
-          <Field
-            label="Resolution summary"
-            className="md:col-span-2"
-          >
-            <textarea
-              rows={4}
-              className={inputClass}
-              value={values.resolutionSummary}
-              onChange={(event) =>
-                patch({
-                  resolutionSummary: event.target.value,
-                })
+            <Field
+              label={
+                values.status === "Cancelled"
+                  ? "Cancellation reason"
+                  : "Resolution summary"
               }
-            />
-          </Field>
+              error={errors.resolutionSummary}
+              className="md:col-span-2"
+            >
+              <textarea
+                rows={4}
+                className={inputClass}
+                value={values.resolutionSummary}
+                onChange={(event) =>
+                  patch({ resolutionSummary: event.target.value })
+                }
+              />
+            </Field>
+          </div>
         </CaseFormSection>
       )}
 
       {submitError && (
-        <div className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-300">
+        <div
+          className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-300"
+          role="alert"
+        >
           {submitError}
         </div>
       )}
 
-      <div className="flex flex-col-reverse justify-between gap-3 border-t border-slate-800 pt-5 sm:flex-row">
+      <div className="flex flex-col-reverse justify-between gap-3 sm:flex-row">
         <Link
           to="/cases"
-          className="inline-flex items-center justify-center rounded-xl border border-slate-700 px-4 py-2 text-slate-300 hover:bg-slate-800"
+          className="rounded-xl border border-slate-700 px-4 py-2 text-center text-slate-300 hover:bg-slate-800"
         >
           Back to cases
         </Link>
 
         <div className="flex justify-end gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-          >
+          <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-
-          <Button type="submit" disabled={saving}>
+          <Button type="submit" loading={saving}>
             {saving
               ? "Saving..."
               : mode === "edit"

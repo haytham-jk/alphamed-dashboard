@@ -23,6 +23,10 @@ export default function NewCasePage({ session }) {
       .catch((loadError) => setError(loadError.message));
   }, []);
 
+  function handleCancel() {
+    if (confirmDiscard()) navigate("/cases?status=Active");
+  }
+
   async function handleSubmit(values) {
     const created = await createSupportCase(
       values,
@@ -52,7 +56,8 @@ export default function NewCasePage({ session }) {
         initialValues={initialValues}
         customers={customers}
         onSubmit={handleSubmit}
-        onCancel={() => navigate("/cases")}
+        onCancel={handleCancel}
+        onDirtyChange={setDirty}
       />
     </div>
   );

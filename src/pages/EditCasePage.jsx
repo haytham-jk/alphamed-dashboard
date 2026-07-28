@@ -66,6 +66,10 @@ export default function EditCasePage({ session }) {
       .catch((err) => setError(err.message));
   }, [caseId]);
 
+  function handleCancel() {
+    if (confirmDiscard()) navigate(`/cases/${caseId}`);
+  }
+
   async function handleSubmit(values) {
     await updateSupportCase(caseId, values, session.user.id);
     setDirty(false);
@@ -95,9 +99,16 @@ export default function EditCasePage({ session }) {
         initialValues={initialValues}
         customers={customers}
         onSubmit={handleSubmit}
-        onCancel={() => navigate(-1)}
+        onCancel={handleCancel}
+        onDirtyChange={setDirty}
       />
-      <Link to="/cases" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white"><ArrowLeft size={18} />Back to cases</Link>
+      <Link
+        to="/cases"
+        onClick={(event) => {
+          if (!confirmDiscard()) event.preventDefault();
+        }}
+        className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white"
+      ><ArrowLeft size={18} />Back to cases</Link>
     </div>
   );
 }
