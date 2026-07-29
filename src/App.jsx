@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import {
   BriefcaseBusiness,
+  Boxes,
   FlaskConical,
   GraduationCap,
   LayoutDashboard,
@@ -31,6 +32,10 @@ import { getCurrentProfile } from "./services/profile";
 import FlashMessage from "./components/ui/FlashMessage";
 
 const AssetsPage = lazy(() => import("./pages/AssetsPage"));
+const BioplexInventoryPage = lazy(() => import("./pages/BioplexInventoryPage"));
+const BioplexInventoryFormPage = lazy(() => import("./pages/BioplexInventoryFormPage"));
+const BioplexInventoryDetailsPage = lazy(() => import("./pages/BioplexInventoryDetailsPage"));
+const BioplexInventoryReportPage = lazy(() => import("./pages/BioplexInventoryReportPage"));
 const CaseDetailsPage = lazy(() => import("./pages/CaseDetailsPage"));
 const CasesPage = lazy(() => import("./pages/CasesPage"));
 const CustomerFormPage = lazy(() => import("./pages/CustomerFormPage"));
@@ -76,48 +81,38 @@ function AppShell({ session, profile }) {
         <LayoutDashboard size={18} aria-hidden="true" />
         Dashboard
       </NavLink>
-
-      <NavLink
-        to="/cases?status=Active"
-        className={navClass}
-        onClick={closeMenu}
-      >
-        <BriefcaseBusiness size={18} aria-hidden="true" />
-        Cases
-      </NavLink>
-
-      <NavLink to="/customers" className={navClass} onClick={closeMenu}>
-        <Users size={18} aria-hidden="true" />
-        Customers
-      </NavLink>
-
-      <NavLink to="/training" className={navClass} onClick={closeMenu}>
-        <GraduationCap size={18} aria-hidden="true" />
-        Training
-      </NavLink>
-
       <NavLink to="/assets" className={navClass} onClick={closeMenu}>
         <MonitorCog size={18} aria-hidden="true" />
         Assets
       </NavLink>
-
-      <NavLink
-        to="/unity-real-time"
-        className={navClass}
-        onClick={closeMenu}
-      >
-        <RadioTower size={18} aria-hidden="true" />
-        Unity Real Time
+      <NavLink to="/bioplex-inventory" className={navClass} onClick={closeMenu}>
+        <Boxes size={18} aria-hidden="true" />
+        BioPlex Inventory
+      </NavLink>
+      <NavLink to="/cases?status=Active" className={navClass} onClick={closeMenu}>
+        <BriefcaseBusiness size={18} aria-hidden="true" />
+        Cases
+      </NavLink>
+      <NavLink to="/customers" className={navClass} onClick={closeMenu}>
+        <Users size={18} aria-hidden="true" />
+        Customers
+      </NavLink>
+      <NavLink to="/eqas-online" className={navClass} onClick={closeMenu}>
+        <ClipboardList size={18} aria-hidden="true" />
+        EQAS Online
       </NavLink>
       <NavLink to="/linearity" className={navClass} onClick={closeMenu}>
         <FlaskConical size={18} aria-hidden="true" />
         Linearity
       </NavLink>
-
-      <NavLink to="/eqas-online" className={navClass} onClick={closeMenu}>
-      <ClipboardList size={18} aria-hidden="true" />
-        EQAS Online
-       </NavLink>
+      <NavLink to="/training" className={navClass} onClick={closeMenu}>
+        <GraduationCap size={18} aria-hidden="true" />
+        Training
+      </NavLink>
+      <NavLink to="/unity-real-time" className={navClass} onClick={closeMenu}>
+        <RadioTower size={18} aria-hidden="true" />
+        Unity Real Time
+      </NavLink>
     </>
   );
 
@@ -256,6 +251,28 @@ function AppShell({ session, profile }) {
           />
 
           <Route path="/assets" element={<AssetsPage canEdit={canEdit} />} />
+          <Route
+            path="/bioplex-inventory"
+            element={<BioplexInventoryPage canEdit={canEdit} profile={profile} />}
+          />
+          <Route
+            path="/bioplex-inventory/new"
+            element={
+              <ProtectedRoute canEdit={canEdit}>
+                <BioplexInventoryFormPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/bioplex-inventory/report" element={<BioplexInventoryReportPage />} />
+          <Route path="/bioplex-inventory/:sessionId" element={<BioplexInventoryDetailsPage canEdit={canEdit} />} />
+          <Route
+            path="/bioplex-inventory/:sessionId/edit"
+            element={
+              <ProtectedRoute canEdit={canEdit}>
+                <BioplexInventoryFormPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/assets/new"
             element={

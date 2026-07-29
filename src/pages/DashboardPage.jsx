@@ -9,6 +9,7 @@ import {
 import { getSupportCases } from "../services/cases";
 import { getLinearityRecords } from "../services/linearity";
 import { ACTIVE_CASE_STATUSES } from "../constants/caseOptions";
+import { CASE_BADGE_CLASS, getCasePriorityClass, getCaseStatusClass } from "../constants/caseDisplay";
 import {
   calculateDaysRemaining,
   calculateNextDueDate,
@@ -199,10 +200,10 @@ export default function DashboardPage({ canEdit }) {
                   {item.customer}
                 </div>
               </div>
-              <span className="rounded-full bg-slate-800 px-3 py-1 text-xs">
+              <span className={`${CASE_BADGE_CLASS} ${getCaseStatusClass(item.status)}`}>
                 {item.status}
               </span>
-              <span className="rounded-full bg-blue-950 px-3 py-1 text-xs text-blue-300">
+              <span className={`${CASE_BADGE_CLASS} ${getCasePriorityClass(item.priority)}`}>
                 {item.priority}
               </span>
             </Link>

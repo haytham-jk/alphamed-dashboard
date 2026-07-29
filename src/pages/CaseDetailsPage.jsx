@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -146,7 +146,7 @@ export default function CaseDetailsPage({ canEdit }) {
   const [resolutionError, setResolutionError] = useState("");
   const [resolving, setResolving] = useState(false);
 
-  function loadRecord() {
+  const loadRecord = useCallback(() => {
     setLoading(true);
     setError("");
 
@@ -156,11 +156,11 @@ export default function CaseDetailsPage({ canEdit }) {
         setError(loadError?.message || "Unable to load case.")
       )
       .finally(() => setLoading(false));
-  }
+  }, [caseId]);
 
   useEffect(() => {
     loadRecord();
-  }, [caseId]);
+  }, [loadRecord]);
 
   function openResolveDialog() {
     setResolution(record?.resolution_summary || "");

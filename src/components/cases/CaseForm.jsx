@@ -26,9 +26,9 @@ const escalationOptions = [
 const inputClass =
   "w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none focus:ring-2 focus:ring-blue-500/30";
 
-function Field({ label, error, className = "", children }) {
+function Field({ label, error, fieldKey, className = "", children }) {
   return (
-    <label className={className}>
+    <label className={className} data-field-key={fieldKey}>
       <span className="mb-2 block text-sm font-medium">{label}</span>
       {children}
       {error && (
@@ -77,7 +77,17 @@ export default function CaseForm({
     setValues(normalizedValues);
     setErrors(nextErrors);
 
-    if (Object.keys(nextErrors).length > 0) return;
+    if (Object.keys(nextErrors).length > 0) {
+      const firstErrorKey = Object.keys(nextErrors)[0];
+      window.requestAnimationFrame(() => {
+        const container = document.querySelector(`[data-field-key="${firstErrorKey}"]`);
+        if (!container) return;
+        container.scrollIntoView({ behavior: "smooth", block: "center" });
+        const control = container.querySelector("input, select, textarea, button, [tabindex]");
+        control?.focus({ preventScroll: true });
+      });
+      return;
+    }
 
     try {
       setSaving(true);
@@ -91,13 +101,13 @@ export default function CaseForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} noValidate className="space-y-5">
       <CaseFormSection
         title="Case overview"
         description="Record the issue, priority, status, and request type."
       >
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Case title" error={errors.title} className="md:col-span-2">
+          <Field label="Case title" error={errors.title} fieldKey="title" className="md:col-span-2">
             <input
               required
               className={inputClass}
@@ -109,6 +119,7 @@ export default function CaseForm({
           <Field
             label="Issue description"
             error={errors.description}
+            fieldKey="description"
             className="md:col-span-2"
           >
             <textarea
@@ -120,7 +131,7 @@ export default function CaseForm({
             />
           </Field>
 
-          <Field label="Priority" error={errors.priority}>
+          <Field label="Priority" error={errors.priority} fieldKey="priority">
             <select
               className={inputClass}
               value={values.priority}
@@ -134,7 +145,7 @@ export default function CaseForm({
             </select>
           </Field>
 
-          <Field label="Status" error={errors.status}>
+          <Field label="Status" error={errors.status} fieldKey="status">
             <select
               className={inputClass}
               value={values.status}
@@ -162,7 +173,7 @@ export default function CaseForm({
             </select>
           </Field>
 
-          <Field label="Case created on" error={errors.caseCreatedOn}>
+          <Field label="Case created on" error={errors.caseCreatedOn} fieldKey="caseCreatedOn">
             <DatePickerInput
               value={values.caseCreatedOn}
               onChange={(event) => patch({ caseCreatedOn: event.target.value })}
@@ -178,6 +189,7 @@ export default function CaseForm({
         title="Customers"
         description="Choose one or more customers and identify the primary customer."
       >
+        <div data-field-key={errors.customerIds ? "customerIds" : errors.primaryCustomerId ? "primaryCustomerId" : undefined}>
         <CaseCustomerSelector
           customers={customers}
           customerIds={values.customerIds}
@@ -186,6 +198,7 @@ export default function CaseForm({
           errors={errors}
           onChange={patch}
         />
+        </div>
       </CaseFormSection>
 
       <CaseFormSection
@@ -246,7 +259,7 @@ export default function CaseForm({
         description="Record the current progress, next action, and target dates."
       >
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Progress (%)" error={errors.progress}>
+          <Field label="Progress (%)" error={errors.progress} fieldKey="progress">
             <input
               type="number"
               min="0"
@@ -304,6 +317,7 @@ export default function CaseForm({
             <Field
               label={values.status === "Cancelled" ? "Cancellation date" : "Resolved date"}
               error={errors.resolvedDate}
+              fieldKey="resolvedDate"
             >
               <DatePickerInput
                 value={values.resolvedDate}
@@ -320,6 +334,7 @@ export default function CaseForm({
                   : "Resolution summary"
               }
               error={errors.resolutionSummary}
+              fieldKey="resolutionSummary"
               className="md:col-span-2"
             >
               <textarea

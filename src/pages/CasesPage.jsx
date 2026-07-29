@@ -9,33 +9,15 @@ import {
 } from "../constants/caseOptions";
 import { getDateUrgency } from "../utils/dateDisplay";
 import PaginationControls from "../components/ui/PaginationControls";
+import { CASE_BADGE_CLASS, CASE_PRIORITY_COLORS, getCaseStatusClass } from "../constants/caseDisplay";
 const PAGE_SIZE = 20;
 const STATUS_FILTERS = ["All", "Active", ...CASE_STATUSES];
 
-const statusColors = {
-  New: "border-slate-700 bg-slate-800 text-slate-200",
-  Pending: "border-cyan-900 bg-cyan-950 text-cyan-300",
-  "In Progress": "border-blue-900 bg-blue-950 text-blue-300",
-  Escalated: "border-red-900 bg-red-950 text-red-300",
-  Unresolved: "border-orange-900 bg-orange-950 text-orange-300",
-  Resolved: "border-emerald-900 bg-emerald-950 text-emerald-300",
-  Closed: "border-emerald-900 bg-emerald-950 text-emerald-300",
-  Cancelled: "border-slate-700 bg-slate-800 text-slate-400",
-};
-
-const priorityColors = {
-  Critical: "border-red-900 bg-red-950 text-red-200",
-  High: "border-red-900 bg-red-950 text-red-300",
-  Medium: "border-amber-900 bg-amber-950 text-amber-300",
-  Low: "border-emerald-900 bg-emerald-950 text-emerald-300",
-};
 
 const priorityRank = Object.fromEntries(
   CASE_PRIORITIES.map((priority, index) => [priority, index])
 );
 
-const badgeClass =
-  "inline-flex h-8 shrink-0 items-center justify-center whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium leading-none";
 
 function validStatus(value) {
   return STATUS_FILTERS.includes(value) ? value : "Active";
@@ -67,13 +49,11 @@ function CaseRow({ record }) {
 
       <div className="flex flex-wrap items-center gap-2 lg:justify-end">
         <span
-          className={`${badgeClass} ${
-            statusColors[record.status] || statusColors.New
-          }`}
+          className={`${CASE_BADGE_CLASS} ${getCaseStatusClass(record.status)}`}
         >
           {record.status || "New"}
         </span>
-        <span className={`${badgeClass} ${urgency.className}`}>
+        <span className={`${CASE_BADGE_CLASS} ${urgency.className}`}>
           {urgency.label}
         </span>
       </div>
@@ -372,8 +352,8 @@ export default function CasesPage({ canEdit }) {
                         <ChevronRight size={18} aria-hidden="true" />
                       )}
                       <span
-                        className={`${badgeClass} ${
-                          priorityColors[group.priority] ||
+                        className={`${CASE_BADGE_CLASS} ${
+                          CASE_PRIORITY_COLORS[group.priority] ||
                           "border-slate-700 bg-slate-800 text-slate-300"
                         }`}
                       >
