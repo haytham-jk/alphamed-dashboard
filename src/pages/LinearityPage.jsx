@@ -1,3 +1,4 @@
+import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Search } from "lucide-react";
@@ -151,7 +152,7 @@ export default function LinearityPage({ canEdit }) {
           />
         </div>
 
-        <select
+        <SelectInput
           value={dueFilter}
           onChange={(event) => setDueFilter(event.target.value)}
           className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 outline-none"
@@ -160,7 +161,7 @@ export default function LinearityPage({ canEdit }) {
           <option>Overdue</option>
           <option>Due today</option>
           <option>Due soon</option>
-        </select>
+        </SelectInput>
       </section>
 
       <p className="text-sm text-slate-500">

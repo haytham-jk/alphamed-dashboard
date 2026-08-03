@@ -1,3 +1,4 @@
+import SelectInput from "../ui/SelectInput";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../ui/button";
@@ -132,7 +133,7 @@ export default function CaseForm({
           </Field>
 
           <Field label="Priority" error={errors.priority} fieldKey="priority">
-            <select
+            <SelectInput
               className={inputClass}
               value={values.priority}
               onChange={(event) => patch({ priority: event.target.value })}
@@ -142,11 +143,11 @@ export default function CaseForm({
                   {item}
                 </option>
               ))}
-            </select>
+            </SelectInput>
           </Field>
 
           <Field label="Status" error={errors.status} fieldKey="status">
-            <select
+            <SelectInput
               className={inputClass}
               value={values.status}
               onChange={(event) => patch({ status: event.target.value })}
@@ -156,11 +157,11 @@ export default function CaseForm({
                   {item}
                 </option>
               ))}
-            </select>
+            </SelectInput>
           </Field>
 
           <Field label="Request type">
-            <select
+            <SelectInput
               className={inputClass}
               value={values.requestType}
               onChange={(event) => patch({ requestType: event.target.value })}
@@ -170,7 +171,7 @@ export default function CaseForm({
                   {item}
                 </option>
               ))}
-            </select>
+            </SelectInput>
           </Field>
 
           <Field label="Case created on" error={errors.caseCreatedOn} fieldKey="caseCreatedOn">
@@ -222,7 +223,7 @@ export default function CaseForm({
             </Field>
 
             <Field label="Escalated to">
-              <select
+              <SelectInput
                 className={inputClass}
                 value={values.escalatedTo}
                 onChange={(event) => patch({ escalatedTo: event.target.value })}
@@ -232,7 +233,7 @@ export default function CaseForm({
                     {item || "Not escalated"}
                   </option>
                 ))}
-              </select>
+              </SelectInput>
             </Field>
 
             <Field label="Case number">

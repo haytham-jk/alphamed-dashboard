@@ -1,3 +1,4 @@
+import SelectInput from "../components/ui/SelectInput";
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, CalendarClock, Search } from "lucide-react";
@@ -111,12 +112,12 @@ export default function BioplexMatchingCheckPage({ profile }) {
 
     <form onSubmit={search} className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-5 md:grid-cols-[1fr_13rem_auto]">
       <input ref={lotRef} className={inputClass} value={lot} onChange={(event) => setLot(event.target.value)} placeholder="Enter any lot number"/>
-      <select className={inputClass} value={type} onChange={(event) => setType(event.target.value)}>
+      <SelectInput className={inputClass} value={type} onChange={(event) => setType(event.target.value)}>
         <option value="">All material types</option>
         <option value="kit">Reagent</option>
         <option value="calibrator">Calibrator</option>
         <option value="qc">QC</option>
-      </select>
+      </SelectInput>
       <button disabled={busy} className="inline-flex h-10 items-center justify-center gap-2 self-start rounded-xl bg-blue-600 px-5 py-2 font-medium disabled:opacity-50">
         <Search size={18}/>{busy ? "Checking..." : "Check"}
       </button>

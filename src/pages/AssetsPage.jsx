@@ -1,3 +1,4 @@
+import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -124,7 +125,7 @@ export default function AssetsPage({ canEdit }) {
           />
         </div>
 
-        <select
+        <SelectInput
           value={view}
           onChange={(event) =>
             setView(event.target.value)
@@ -134,7 +135,7 @@ export default function AssetsPage({ canEdit }) {
           <option>Active</option>
           <option>Inactive</option>
           <option>All</option>
-        </select>
+        </SelectInput>
       </section>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

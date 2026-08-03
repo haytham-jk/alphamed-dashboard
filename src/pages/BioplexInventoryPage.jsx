@@ -1,3 +1,4 @@
+import SelectInput from "../components/ui/SelectInput";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -167,7 +168,7 @@ export default function BioplexInventoryPage({ canEdit, profile }) {
       <section className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-4 md:grid-cols-[minmax(16rem,1fr)_minmax(13rem,16rem)_auto] md:items-end">
         <label>
           <span className="mb-2 block text-sm font-medium">Customer</span>
-          <select
+          <SelectInput
             value={customerFilter}
             onChange={(event) => setCustomerFilter(event.target.value)}
             className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 pr-10"
@@ -176,12 +177,12 @@ export default function BioplexInventoryPage({ canEdit, profile }) {
             {customers.map(([id, name]) => (
               <option key={id} value={id}>{name}</option>
             ))}
-          </select>
+          </SelectInput>
         </label>
 
         <label>
           <span className="mb-2 block text-sm font-medium">Status</span>
-          <select
+          <SelectInput
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
             className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 pr-10"
@@ -190,7 +191,7 @@ export default function BioplexInventoryPage({ canEdit, profile }) {
             <option value="Draft">Draft</option>
             <option value="Completed">Completed</option>
             <option value="Exported">Exported</option>
-          </select>
+          </SelectInput>
         </label>
 
         {isAdmin && (

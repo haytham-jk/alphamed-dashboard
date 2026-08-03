@@ -1,3 +1,4 @@
+import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -303,7 +304,7 @@ export default function UnityRealTimePage({ canEdit }) {
           <span className="mb-2 block text-sm font-medium text-slate-300">
             License status
           </span>
-          <select
+          <SelectInput
             value={licenseFilter}
             onChange={(event) => setLicenseFilter(event.target.value)}
             className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2"
@@ -312,14 +313,14 @@ export default function UnityRealTimePage({ canEdit }) {
             <option>Expired</option>
             <option>Valid</option>
             <option>Expiry not recorded</option>
-          </select>
+          </SelectInput>
         </label>
 
         <label>
           <span className="mb-2 block text-sm font-medium text-slate-300">
             Connectivity
           </span>
-          <select
+          <SelectInput
             value={connectivityFilter}
             onChange={(event) => setConnectivityFilter(event.target.value)}
             className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2"
@@ -328,14 +329,14 @@ export default function UnityRealTimePage({ canEdit }) {
             <option value="None">No connectivity</option>
             <option>UnityConnect 1</option>
             <option>UnityConnect 2</option>
-          </select>
+          </SelectInput>
         </label>
 
         <label>
           <span className="mb-2 block text-sm font-medium text-slate-300">
             Service pack
           </span>
-          <select
+          <SelectInput
             value={servicePackFilter}
             onChange={(event) => setServicePackFilter(event.target.value)}
             className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2"
@@ -344,14 +345,14 @@ export default function UnityRealTimePage({ canEdit }) {
             <option>Latest service pack</option>
             <option>Behind latest service pack</option>
             <option>Version not recorded</option>
-          </select>
+          </SelectInput>
         </label>
 
         <label>
           <span className="mb-2 block text-sm font-medium text-slate-300">
             Customer
           </span>
-          <select
+          <SelectInput
             value={customerFilter}
             onChange={(event) => setCustomerFilter(event.target.value)}
             className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2"
@@ -360,7 +361,7 @@ export default function UnityRealTimePage({ canEdit }) {
             {customers.map((customer) => (
               <option key={customer}>{customer}</option>
             ))}
-          </select>
+          </SelectInput>
         </label>
       </section>
 

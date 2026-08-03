@@ -1,3 +1,4 @@
+import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useMemo, useState } from "react";
 import useUnsavedChanges from "../hooks/useUnsavedChanges";
 import { ArrowLeft } from "lucide-react";
@@ -83,24 +84,24 @@ export default function NewAssetPage() {
       <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5 md:grid-cols-2">
         <label className="md:col-span-2">
           Customer
-          <select required className={inputClass} value={values.customerId} onChange={(event) => patch("customerId", event.target.value)}>
+          <SelectInput required className={inputClass} value={values.customerId} onChange={(event) => patch("customerId", event.target.value)}>
             <option value="">Select customer</option>
             {customers.map((customer) => (
               <option key={customer.id} value={customer.id}>
                 {customer.name}
               </option>
             ))}
-          </select>
+          </SelectInput>
         </label>
 
         <label>
           Instrument type
-          <select required className={inputClass} value={values.instrumentType} onChange={(event) => patch("instrumentType", event.target.value)}>
+          <SelectInput required className={inputClass} value={values.instrumentType} onChange={(event) => patch("instrumentType", event.target.value)}>
             <option value="">Select instrument type</option>
             {INSTRUMENT_TYPES.map((instrument) => (
               <option key={instrument}>{instrument}</option>
             ))}
-          </select>
+          </SelectInput>
         </label>
 
         {values.instrumentType === "Other" && (

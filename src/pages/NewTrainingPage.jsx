@@ -1,3 +1,4 @@
+import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useState } from "react";
 import useUnsavedChanges from "../hooks/useUnsavedChanges";
 import { ArrowLeft } from "lucide-react";
@@ -144,7 +145,7 @@ export default function NewTrainingPage({ session }) {
 
         <label>
           Customer
-          <select
+          <SelectInput
             required
             className={inputClass}
             value={values.customerId}
@@ -158,12 +159,12 @@ export default function NewTrainingPage({ session }) {
                 {customer.name}
               </option>
             ))}
-          </select>
+          </SelectInput>
         </label>
 
         <label>
           Installed instrument
-          <select
+          <SelectInput
             className={inputClass}
             value={values.instrumentId}
             disabled={!values.customerId}
@@ -180,7 +181,7 @@ export default function NewTrainingPage({ session }) {
                   : ""}
               </option>
             ))}
-          </select>
+          </SelectInput>
         </label>
 
         <label>

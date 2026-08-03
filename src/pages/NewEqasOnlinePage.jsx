@@ -1,3 +1,4 @@
+import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -46,7 +47,7 @@ export default function NewEqasOnlinePage() {
     <header><p className="text-sm text-blue-400">Online quality assurance</p><h1 className="text-3xl font-semibold">New EQAS record</h1></header>
     {error && <div role="alert" className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-300">{error}</div>}
     <form onSubmit={submit} className="grid gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5 md:grid-cols-2">
-      <label className="md:col-span-2">Customer<select required value={values.customerId} onChange={(event) => patch("customerId", event.target.value)} className={inputClass}><option value="">Select customer</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}</select></label>
+      <label className="md:col-span-2">Customer<SelectInput required value={values.customerId} onChange={(event) => patch("customerId", event.target.value)} className={inputClass}><option value="">Select customer</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}</SelectInput></label>
       <label className="md:col-span-2">Lab Name<input required value={values.labName} onChange={(event) => patch("labName", event.target.value)} placeholder="Branch, laboratory, or instrument name" className={inputClass} /></label>
       <label>QCnet ID<input required value={values.qcnetId} onChange={(event) => patch("qcnetId", event.target.value)} placeholder="Email or QCnet account ID" className={inputClass} /><span className="mt-1 block text-xs text-slate-500">Duplicates are allowed.</span></label>
       <label>Lab Number<input required inputMode="numeric" pattern="[0-9]+" value={values.labNumber} onChange={(event) => patch("labNumber", event.target.value.replace(/\D/g, ""))} className={inputClass} /><span className="mt-1 block text-xs text-slate-500">Must be unique. Leading zeroes are preserved.</span></label>

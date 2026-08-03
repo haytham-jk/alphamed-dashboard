@@ -1,3 +1,4 @@
+import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -143,7 +144,7 @@ export default function NewUnityRealTimePage() {
       >
         <label>
           Customer
-          <select
+          <SelectInput
             required
             className={inputClass}
             value={values.customerId}
@@ -155,7 +156,7 @@ export default function NewUnityRealTimePage() {
                 {customer.name}
               </option>
             ))}
-          </select>
+          </SelectInput>
         </label>
 
         <label>
@@ -202,7 +203,7 @@ export default function NewUnityRealTimePage() {
 
         <label>
           Connectivity solution
-          <select
+          <SelectInput
             className={inputClass}
             value={values.connectivityType}
             onChange={(event) =>
@@ -212,7 +213,7 @@ export default function NewUnityRealTimePage() {
             <option value="None">No connectivity</option>
             <option value="UnityConnect 1">UnityConnect 1 (UC1)</option>
             <option value="UnityConnect 2">UnityConnect 2 (UC2)</option>
-          </select>
+          </SelectInput>
         </label>
 
         {values.connectivityType !== "None" && (

@@ -1,3 +1,4 @@
+import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useState } from "react";
 import useUnsavedChanges from "../hooks/useUnsavedChanges";
 import { ArrowLeft, Trash2 } from "lucide-react";
@@ -191,7 +192,7 @@ export default function EditLinearityPage() {
       >
         <label>
           Customer
-          <select
+          <SelectInput
             required
             className={inputClass}
             value={values.customerId}
@@ -203,12 +204,12 @@ export default function EditLinearityPage() {
                 {customer.name}
               </option>
             ))}
-          </select>
+          </SelectInput>
         </label>
 
         <label>
           Installed instrument
-          <select
+          <SelectInput
             required
             className={inputClass}
             value={values.instrumentId}
@@ -224,7 +225,7 @@ export default function EditLinearityPage() {
                   : ""}
               </option>
             ))}
-          </select>
+          </SelectInput>
           <span className="mt-1 block text-xs text-slate-500">
             Instruments must first be assigned to this customer in Assets.
           </span>
@@ -291,7 +292,7 @@ export default function EditLinearityPage() {
 
             <label>
               Frequency
-              <select
+              <SelectInput
                 className={inputClass}
                 value={values.frequencyMonths}
                 onChange={(event) =>
@@ -300,7 +301,7 @@ export default function EditLinearityPage() {
               >
                 <option value={6}>6 Months</option>
                 <option value={12}>1 Year</option>
-              </select>
+              </SelectInput>
             </label>
           </>
         )}

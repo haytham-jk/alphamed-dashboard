@@ -1,3 +1,4 @@
+import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Copy, Plus, Search } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -71,7 +72,7 @@ export default function EqasOnlinePage({ canEdit }) {
       </header>
       <section className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-4 md:grid-cols-[minmax(280px,1fr)_280px]">
         <label><span className="mb-2 block text-sm font-medium text-slate-300">Search</span><div className="relative"><Search size={17} className="pointer-events-none absolute left-3 top-3 text-slate-500" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="QCnet ID, Lab Number, or Lab Name..." className="w-full rounded-xl border border-slate-700 bg-slate-950 py-2 pl-10 pr-3" /></div></label>
-        <label><span className="mb-2 block text-sm font-medium text-slate-300">Customer</span><select value={customerFilter} onChange={(event) => setCustomerFilter(event.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2"><option>All</option>{customers.map((customer) => <option key={customer}>{customer}</option>)}</select></label>
+        <label><span className="mb-2 block text-sm font-medium text-slate-300">Customer</span><SelectInput value={customerFilter} onChange={(event) => setCustomerFilter(event.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2"><option>All</option>{customers.map((customer) => <option key={customer}>{customer}</option>)}</SelectInput></label>
       </section>
       {error && <div role="alert" className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-300">{error}</div>}
       <p className="text-sm text-slate-500">Showing {visible.length} of {filtered.length} records</p>

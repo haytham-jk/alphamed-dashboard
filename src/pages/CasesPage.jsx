@@ -1,3 +1,4 @@
+import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ChevronDown, ChevronRight, RefreshCw, Search } from "lucide-react";
@@ -259,7 +260,7 @@ export default function CasesPage({ canEdit }) {
 
         <label>
           <span className="mb-2 block text-sm font-medium">Status</span>
-          <select
+          <SelectInput
             value={status}
             onChange={(event) => updateFilters({ status: event.target.value })}
             className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2"
@@ -267,24 +268,24 @@ export default function CasesPage({ canEdit }) {
             {STATUS_FILTERS.map((item) => (
               <option key={item}>{item}</option>
             ))}
-          </select>
+          </SelectInput>
         </label>
 
         <label>
           <span className="mb-2 block text-sm font-medium">View</span>
-          <select
+          <SelectInput
             value={groupBy}
             onChange={(event) => updateFilters({ group: event.target.value })}
             className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2"
           >
             <option value="none">Flat list</option>
             <option value="priority">Group by priority</option>
-          </select>
+          </SelectInput>
         </label>
 
         <label>
           <span className="mb-2 block text-sm font-medium">Sort by</span>
-          <select
+          <SelectInput
             value={sort}
             onChange={(event) => updateFilters({ sort: event.target.value })}
             className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2"
@@ -294,7 +295,7 @@ export default function CasesPage({ canEdit }) {
             <option value="newest">Newest</option>
             <option value="oldest">Oldest</option>
             <option value="customer">Customer</option>
-          </select>
+          </SelectInput>
         </label>
       </section>
 

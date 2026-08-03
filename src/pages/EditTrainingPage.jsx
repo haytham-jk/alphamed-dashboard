@@ -1,3 +1,4 @@
+import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useState } from "react";
 import useUnsavedChanges from "../hooks/useUnsavedChanges";
 import { ArrowLeft } from "lucide-react";
@@ -168,7 +169,7 @@ export default function EditTrainingPage({ session }) {
 
         <label>
           Customer
-          <select
+          <SelectInput
             className={inputClass}
             value={values.customerId}
             onChange={(event) =>
@@ -184,12 +185,12 @@ export default function EditTrainingPage({ session }) {
                 {customer.name}
               </option>
             ))}
-          </select>
+          </SelectInput>
         </label>
 
         <label>
           Instrument
-          <select
+          <SelectInput
             className={inputClass}
             value={values.instrumentId}
             onChange={(event) =>
@@ -205,7 +206,7 @@ export default function EditTrainingPage({ session }) {
                 {instrument.instrument_name}
               </option>
             ))}
-          </select>
+          </SelectInput>
         </label>
 
         <label>

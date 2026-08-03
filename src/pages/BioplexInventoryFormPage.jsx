@@ -1,3 +1,4 @@
+import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
@@ -325,7 +326,7 @@ export default function BioplexInventoryFormPage() {
     <header><p className="text-sm text-blue-400">BioPlex Inventory</p><h1 className="text-3xl font-semibold">{editing ? "Edit stock count" : "New stock count"}</h1></header>
     {error && <div className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-300">{error}</div>}
     <section className="grid gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5 md:grid-cols-2">
-      <label>Customer<select ref={customerRef} className={`${inputClass} mt-2`} value={customerId} onChange={(event) => setCustomerId(event.target.value)}><option value="">Select customer</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}{customer.emirate ? `, ${customer.emirate}` : ""}</option>)}</select></label>
+      <label>Customer<SelectInput ref={customerRef} className={`${inputClass} mt-2`} value={customerId} onChange={(event) => setCustomerId(event.target.value)}><option value="">Select customer</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}{customer.emirate ? `, ${customer.emirate}` : ""}</option>)}</SelectInput></label>
       <label>Count date<input type="date" className={`${inputClass} mt-2`} value={countedOn} onChange={(event) => setCountedOn(event.target.value)}/><span className="mt-1 block text-xs text-slate-500">{formatBioplexDate(countedOn)}</span></label>
       <label className="md:col-span-2">Notes<textarea rows={2} className={`${inputClass} mt-2`} value={notes} onChange={(event) => setNotes(event.target.value)}/></label>
       {["Completed", "Exported"].includes(previousStatus) && <label className="md:col-span-2">Correction reason<textarea data-correction rows={2} className={`${inputClass} mt-2`} value={correctionReason} onChange={(event) => setCorrectionReason(event.target.value)}/></label>}

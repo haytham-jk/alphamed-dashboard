@@ -1,3 +1,4 @@
+import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useMemo, useState } from "react";
 import useUnsavedChanges from "../hooks/useUnsavedChanges";
 import { ArrowLeft } from "lucide-react";
@@ -194,7 +195,7 @@ export default function NewLinearityPage() {
       >
         <label>
           <span className="text-sm font-medium">Customer</span>
-          <select
+          <SelectInput
             required
             className={inputClass}
             value={values.customerId}
@@ -206,12 +207,12 @@ export default function NewLinearityPage() {
                 {customer.name}
               </option>
             ))}
-          </select>
+          </SelectInput>
         </label>
 
         <label>
           <span className="text-sm font-medium">Installed instrument</span>
-          <select
+          <SelectInput
             required
             className={inputClass}
             value={values.instrumentId}
@@ -233,7 +234,7 @@ export default function NewLinearityPage() {
                   : ""}
               </option>
             ))}
-          </select>
+          </SelectInput>
           <span className="mt-1 block text-xs text-slate-500">
             Only instruments assigned to the selected customer in Assets are
             available.
@@ -303,7 +304,7 @@ export default function NewLinearityPage() {
 
             <label>
               <span className="text-sm font-medium">Frequency</span>
-              <select
+              <SelectInput
                 className={inputClass}
                 value={values.frequencyMonths}
                 onChange={(event) =>
@@ -312,7 +313,7 @@ export default function NewLinearityPage() {
               >
                 <option value={6}>6 Months</option>
                 <option value={12}>1 Year</option>
-              </select>
+              </SelectInput>
             </label>
 
             <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 md:col-span-2">

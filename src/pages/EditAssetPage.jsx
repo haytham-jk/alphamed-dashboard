@@ -1,3 +1,4 @@
+import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useMemo, useState } from "react";
 import useUnsavedChanges from "../hooks/useUnsavedChanges";
 import { ArrowLeft, Trash2 } from "lucide-react";
@@ -133,7 +134,7 @@ export default function EditAssetPage() {
       >
         <label className="md:col-span-2">
           Customer
-          <select
+          <SelectInput
             className={inputClass}
             value={values.customerId}
             onChange={(event) => patch("customerId", event.target.value)}
@@ -144,12 +145,12 @@ export default function EditAssetPage() {
                 {customer.name}
               </option>
             ))}
-          </select>
+          </SelectInput>
         </label>
 
         <label>
           Instrument type
-          <select
+          <SelectInput
             required
             className={inputClass}
             value={values.instrumentType}
@@ -158,7 +159,7 @@ export default function EditAssetPage() {
             {INSTRUMENT_TYPES.map((type) => (
               <option key={type}>{type}</option>
             ))}
-          </select>
+          </SelectInput>
         </label>
 
         {values.instrumentType === "Other" && (

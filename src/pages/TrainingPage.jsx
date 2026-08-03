@@ -1,3 +1,4 @@
+import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, RefreshCw, Search } from "lucide-react";
@@ -161,7 +162,7 @@ export default function TrainingPage({ canEdit }) {
 
         <label>
           <span className="mb-2 block text-sm font-medium">Sort by</span>
-          <select
+          <SelectInput
             value={sort}
             onChange={(event) => setSort(event.target.value)}
             className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2"
@@ -169,7 +170,7 @@ export default function TrainingPage({ canEdit }) {
             <option value="newest">Newest</option>
             <option value="oldest">Oldest</option>
             <option value="customer">Customer</option>
-          </select>
+          </SelectInput>
         </label>
       </section>
 
