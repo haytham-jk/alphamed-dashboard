@@ -1,4 +1,3 @@
-import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -125,7 +124,7 @@ export default function AssetsPage({ canEdit }) {
           />
         </div>
 
-        <SelectInput
+        <select
           value={view}
           onChange={(event) =>
             setView(event.target.value)
@@ -135,11 +134,11 @@ export default function AssetsPage({ canEdit }) {
           <option>Active</option>
           <option>Inactive</option>
           <option>All</option>
-        </SelectInput>
+        </select>
       </section>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
+        <div className="rounded-2xl border border-slate-800 bg-gradient-to-br from-fuchsia-950/60 via-slate-900 to-blue-950/60 p-4">
           <div className="text-sm text-slate-500">
             Visible assets
           </div>
@@ -148,7 +147,7 @@ export default function AssetsPage({ canEdit }) {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
+        <div className="rounded-2xl border border-slate-800 bg-gradient-to-br from-fuchsia-950/60 via-slate-900 to-blue-950/60 p-4">
           <div className="text-sm text-slate-500">
             Instrument types
           </div>
@@ -157,7 +156,7 @@ export default function AssetsPage({ canEdit }) {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
+        <div className="rounded-2xl border border-slate-800 bg-gradient-to-br from-fuchsia-950/60 via-slate-900 to-blue-950/60 p-4">
           <div className="text-sm text-slate-500">
             Inactive instruments
           </div>
