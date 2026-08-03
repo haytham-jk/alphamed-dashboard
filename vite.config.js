@@ -12,11 +12,11 @@ export default defineConfig({
       injectRegister: false,
       manifest: false,
       includeAssets: [
-        "favicon-48.png",
-        "apple-touch-icon.png",
-        "icons/icon-192.png",
-        "icons/icon-512.png",
-        "icons/icon-maskable-512.png",
+        "favicon-48-v3.png",
+        "apple-touch-icon-v3.png",
+        "icons/icon-192-v3.png",
+        "icons/icon-512-v3.png",
+        "icons/icon-maskable-512-v3.png",
       ],
       workbox: {
         cleanupOutdatedCaches: true,
@@ -30,7 +30,7 @@ export default defineConfig({
               request.mode === "navigate" && url.origin === self.location.origin,
             handler: "NetworkFirst",
             options: {
-              cacheName: "operations-hub-pages",
+              cacheName: "operations-hub-pages-v3",
               networkTimeoutSeconds: 5,
               expiration: { maxEntries: 20, maxAgeSeconds: 86400 },
             },

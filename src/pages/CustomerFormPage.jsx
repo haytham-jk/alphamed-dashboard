@@ -58,7 +58,7 @@ export default function CustomerFormPage() {
   }
 
   return <div className="mx-auto max-w-4xl space-y-5">
-    <Link to="/customers" onClick={(event) => { if (!confirmDiscard()) event.preventDefault(); }} className="inline-flex items-center gap-2 text-slate-400"><ArrowLeft size={18} />Back to customers</Link>
+    <Link to="/customers" onClick={(event) => { if (!confirmDiscard()) event.preventDefault(); }} className="-ml-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-slate-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"><ArrowLeft size={18} />Back to customers</Link>
     <h1 className="text-3xl font-semibold">{editing ? "Edit customer" : "New customer"}</h1>
     {error && <div className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-300">{error}</div>}
     <form onSubmit={handleSubmit} className="space-y-5">

@@ -29,6 +29,76 @@ textarea {
   font: inherit;
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+}
+
+button:not(:disabled),
+a.rounded-xl,
+a.rounded-lg,
+a.inline-flex {
+  transition:
+    filter 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  button:not(:disabled):hover,
+  a.rounded-xl:hover,
+  a.rounded-lg:hover,
+  a.inline-flex:hover {
+    filter: brightness(1.22) saturate(1.12);
+    box-shadow:
+      0 0 0 1px rgb(168 85 247 / 55%),
+      0 8px 20px rgb(88 28 135 / 22%);
+    transform: translateY(-1px);
+  }
+}
+
+button:not(:disabled):focus-visible,
+a.rounded-xl:focus-visible,
+a.rounded-lg:focus-visible,
+a.inline-flex:focus-visible {
+  outline: 2px solid #a855f7;
+  outline-offset: 2px;
+  filter: brightness(1.18) saturate(1.1);
+  box-shadow: 0 0 0 4px rgb(168 85 247 / 20%);
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+button:not(:disabled):active,
+a.rounded-xl:active,
+a.rounded-lg:active,
+a.inline-flex:active {
+  filter: brightness(1.08);
+  transform: translateY(0) scale(0.99);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button,
+  a.rounded-xl,
+  a.rounded-lg,
+  a.inline-flex {
+    transition: none;
+  }
+
+  button:not(:disabled):hover,
+  a.rounded-xl:hover,
+  a.rounded-lg:hover,
+  a.inline-flex:hover,
+  button:not(:disabled):active,
+  a.rounded-xl:active,
+  a.rounded-lg:active,
+  a.inline-flex:active {
+    transform: none;
+  }
 }

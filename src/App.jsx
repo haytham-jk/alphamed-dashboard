@@ -9,30 +9,30 @@ import {
 import {
   BriefcaseBusiness,
   Boxes,
-  FlaskConical,
+  ClipboardList,
+  GitCommitHorizontal,
   GraduationCap,
   LayoutDashboard,
   LogOut,
   Menu,
   MonitorCog,
-  RadioTower,
+  Share2,
   Users,
   X,
 } from "lucide-react";
-
 import Login from "./components/Login";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import InstallAppButton from "./components/InstallAppButton";
 import PwaUpdatePrompt from "./components/PwaUpdatePrompt";
-import { supabase } from "./lib/supabase";
-
-import { ClipboardList } from "lucide-react";
-
-import { getCurrentProfile } from "./services/profile";
 import FlashMessage from "./components/ui/FlashMessage";
+import { supabase } from "./lib/supabase";
+import { getCurrentProfile } from "./services/profile";
 
 const AssetsPage = lazy(() => import("./pages/AssetsPage"));
 const BioplexInventoryPage = lazy(() => import("./pages/BioplexInventoryPage"));
+const BioplexMatchingCheckPage = lazy(() => import("./pages/BioplexMatchingCheckPage"));
+const BioplexMatchingImportsPage = lazy(() => import("./pages/BioplexMatchingImportsPage"));
+const BioplexMatchingImportReviewPage = lazy(() => import("./pages/BioplexMatchingImportReviewPage"));
 const BioplexInventoryFormPage = lazy(() => import("./pages/BioplexInventoryFormPage"));
 const BioplexInventoryDetailsPage = lazy(() => import("./pages/BioplexInventoryDetailsPage"));
 const BioplexInventoryReportPage = lazy(() => import("./pages/BioplexInventoryReportPage"));
@@ -87,7 +87,7 @@ function AppShell({ session, profile }) {
       </NavLink>
       <NavLink to="/bioplex-inventory" className={navClass} onClick={closeMenu}>
         <Boxes size={18} aria-hidden="true" />
-        BioPlex Inventory
+        BioPlex Management
       </NavLink>
       <NavLink to="/cases?status=Active" className={navClass} onClick={closeMenu}>
         <BriefcaseBusiness size={18} aria-hidden="true" />
@@ -102,7 +102,7 @@ function AppShell({ session, profile }) {
         EQAS Online
       </NavLink>
       <NavLink to="/linearity" className={navClass} onClick={closeMenu}>
-        <FlaskConical size={18} aria-hidden="true" />
+        <GitCommitHorizontal size={18} aria-hidden="true" />
         Linearity
       </NavLink>
       <NavLink to="/training" className={navClass} onClick={closeMenu}>
@@ -110,7 +110,7 @@ function AppShell({ session, profile }) {
         Training
       </NavLink>
       <NavLink to="/unity-real-time" className={navClass} onClick={closeMenu}>
-        <RadioTower size={18} aria-hidden="true" />
+        <Share2 size={18} aria-hidden="true" />
         Unity Real Time
       </NavLink>
     </>
@@ -128,11 +128,9 @@ function AppShell({ session, profile }) {
             {profile?.role || "user"}
           </p>
         </div>
-
         <nav className="space-y-1" aria-label="Main navigation">
           {navigation}
         </nav>
-
         <button
           type="button"
           onClick={() => supabase.auth.signOut()}
@@ -148,7 +146,6 @@ function AppShell({ session, profile }) {
           <p className="text-sm text-blue-400">Alphamed</p>
           <p className="font-semibold">Operations Hub</p>
         </div>
-
         <button
           type="button"
           onClick={() => setMenuOpen((current) => !current)}
@@ -162,10 +159,7 @@ function AppShell({ session, profile }) {
       </header>
 
       {menuOpen && (
-        <div
-          id="mobile-navigation"
-          className="border-b border-slate-800 bg-slate-950 p-4 md:hidden"
-        >
+        <div id="mobile-navigation" className="border-b border-slate-800 bg-slate-950 p-4 md:hidden">
           <nav className="space-y-1" aria-label="Mobile navigation">
             {navigation}
           </nav>
@@ -182,162 +176,41 @@ function AppShell({ session, profile }) {
 
       <main className="p-4 md:ml-60 md:p-6">
         <FlashMessage />
-          <Suspense fallback={<div className="flex min-h-48 items-center justify-center text-slate-400" role="status">Loading page...</div>}>
+        <Suspense fallback={<div className="flex min-h-48 items-center justify-center text-slate-400" role="status">Loading page...</div>}>
           <Routes>
-          <Route path="/" element={<DashboardPage canEdit={canEdit} />} />
-
-          <Route path="/cases" element={<CasesPage canEdit={canEdit} />} />
-          <Route
-            path="/cases/new"
-            element={
-              <ProtectedRoute canEdit={canEdit}>
-                <NewCasePage session={session} />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/cases/:caseId"
-            element={<CaseDetailsPage canEdit={canEdit} />}
-          />
-          <Route
-            path="/cases/:caseId/edit"
-            element={
-              <ProtectedRoute canEdit={canEdit}>
-                <EditCasePage session={session} />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/customers"
-            element={<CustomersPage canEdit={canEdit} />}
-          />
-          <Route
-            path="/customers/new"
-            element={
-              <ProtectedRoute canEdit={canEdit}>
-                <CustomerFormPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/customers/:customerId/edit"
-            element={
-              <ProtectedRoute canEdit={canEdit}>
-                <CustomerFormPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/training"
-            element={<TrainingPage canEdit={canEdit} />}
-          />
-          <Route
-            path="/training/new"
-            element={
-              <ProtectedRoute canEdit={canEdit}>
-                <NewTrainingPage session={session} />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/training/:trainingId/edit"
-            element={
-              <ProtectedRoute canEdit={canEdit}>
-                <EditTrainingPage session={session} />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route path="/assets" element={<AssetsPage canEdit={canEdit} />} />
-          <Route
-            path="/bioplex-inventory"
-            element={<BioplexInventoryPage canEdit={canEdit} profile={profile} />}
-          />
-          <Route
-            path="/bioplex-inventory/new"
-            element={
-              <ProtectedRoute canEdit={canEdit}>
-                <BioplexInventoryFormPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/bioplex-inventory/report" element={<BioplexInventoryReportPage />} />
-          <Route path="/bioplex-inventory/:sessionId" element={<BioplexInventoryDetailsPage canEdit={canEdit} />} />
-          <Route
-            path="/bioplex-inventory/:sessionId/edit"
-            element={
-              <ProtectedRoute canEdit={canEdit}>
-                <BioplexInventoryFormPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/assets/new"
-            element={
-              <ProtectedRoute canEdit={canEdit}>
-                <NewAssetPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/assets/:assetId/edit"
-            element={
-              <ProtectedRoute canEdit={canEdit}>
-                <EditAssetPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/unity-real-time"
-            element={<UnityRealTimePage canEdit={canEdit} />}
-          />
-          <Route
-            path="/unity-real-time/new"
-            element={
-              <ProtectedRoute canEdit={canEdit}>
-                <NewUnityRealTimePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/unity-real-time/:installationId/edit"
-            element={
-              <ProtectedRoute canEdit={canEdit}>
-                <EditUnityRealTimePage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/linearity"
-            element={<LinearityPage canEdit={canEdit} />}
-          />
-          <Route
-            path="/linearity/new"
-            element={
-              <ProtectedRoute canEdit={canEdit}>
-                <NewLinearityPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/linearity/:linearityId/edit"
-            element={
-              <ProtectedRoute canEdit={canEdit}>
-                <EditLinearityPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route path="/eqas-online" element={<EqasOnlinePage canEdit={canEdit} />} />
-          <Route path="/eqas-online/new" element={<ProtectedRoute canEdit={canEdit}><NewEqasOnlinePage /></ProtectedRoute>} />
-          <Route path="/eqas-online/:recordId/edit" element={<ProtectedRoute canEdit={canEdit}><EditEqasOnlinePage /></ProtectedRoute>} />
-
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            <Route path="/" element={<DashboardPage canEdit={canEdit} />} />
+            <Route path="/cases" element={<CasesPage canEdit={canEdit} />} />
+            <Route path="/cases/new" element={<ProtectedRoute canEdit={canEdit}><NewCasePage session={session} /></ProtectedRoute>} />
+            <Route path="/cases/:caseId" element={<CaseDetailsPage canEdit={canEdit} />} />
+            <Route path="/cases/:caseId/edit" element={<ProtectedRoute canEdit={canEdit}><EditCasePage session={session} /></ProtectedRoute>} />
+            <Route path="/customers" element={<CustomersPage canEdit={canEdit} />} />
+            <Route path="/customers/new" element={<ProtectedRoute canEdit={canEdit}><CustomerFormPage /></ProtectedRoute>} />
+            <Route path="/customers/:customerId/edit" element={<ProtectedRoute canEdit={canEdit}><CustomerFormPage /></ProtectedRoute>} />
+            <Route path="/training" element={<TrainingPage canEdit={canEdit} />} />
+            <Route path="/training/new" element={<ProtectedRoute canEdit={canEdit}><NewTrainingPage session={session} /></ProtectedRoute>} />
+            <Route path="/training/:trainingId/edit" element={<ProtectedRoute canEdit={canEdit}><EditTrainingPage session={session} /></ProtectedRoute>} />
+            <Route path="/assets" element={<AssetsPage canEdit={canEdit} />} />
+            <Route path="/assets/new" element={<ProtectedRoute canEdit={canEdit}><NewAssetPage /></ProtectedRoute>} />
+            <Route path="/assets/:assetId/edit" element={<ProtectedRoute canEdit={canEdit}><EditAssetPage /></ProtectedRoute>} />
+            <Route path="/bioplex-inventory" element={<BioplexInventoryPage canEdit={canEdit} profile={profile} />} />
+            <Route path="/bioplex-inventory/new" element={<ProtectedRoute canEdit={canEdit}><BioplexInventoryFormPage /></ProtectedRoute>} />
+            <Route path="/bioplex-inventory/report" element={<BioplexInventoryReportPage />} />
+            <Route path="/bioplex-matching-check" element={<BioplexMatchingCheckPage profile={profile} />} />
+            <Route path="/bioplex-matching-imports" element={<ProtectedRoute canEdit={profile?.role === "admin"}><BioplexMatchingImportsPage /></ProtectedRoute>} />
+            <Route path="/bioplex-matching-imports/:importId" element={<ProtectedRoute canEdit={profile?.role === "admin"}><BioplexMatchingImportReviewPage /></ProtectedRoute>} />
+            <Route path="/bioplex-inventory/:sessionId" element={<BioplexInventoryDetailsPage canEdit={canEdit} />} />
+            <Route path="/bioplex-inventory/:sessionId/edit" element={<ProtectedRoute canEdit={canEdit}><BioplexInventoryFormPage /></ProtectedRoute>} />
+            <Route path="/unity-real-time" element={<UnityRealTimePage canEdit={canEdit} />} />
+            <Route path="/unity-real-time/new" element={<ProtectedRoute canEdit={canEdit}><NewUnityRealTimePage /></ProtectedRoute>} />
+            <Route path="/unity-real-time/:installationId/edit" element={<ProtectedRoute canEdit={canEdit}><EditUnityRealTimePage /></ProtectedRoute>} />
+            <Route path="/linearity" element={<LinearityPage canEdit={canEdit} />} />
+            <Route path="/linearity/new" element={<ProtectedRoute canEdit={canEdit}><NewLinearityPage /></ProtectedRoute>} />
+            <Route path="/linearity/:linearityId/edit" element={<ProtectedRoute canEdit={canEdit}><EditLinearityPage /></ProtectedRoute>} />
+            <Route path="/eqas-online" element={<EqasOnlinePage canEdit={canEdit} />} />
+            <Route path="/eqas-online/new" element={<ProtectedRoute canEdit={canEdit}><NewEqasOnlinePage /></ProtectedRoute>} />
+            <Route path="/eqas-online/:recordId/edit" element={<ProtectedRoute canEdit={canEdit}><EditEqasOnlinePage /></ProtectedRoute>} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </Suspense>
       </main>
     </div>
@@ -358,82 +231,60 @@ export default function App() {
     async function applySession(nextSession) {
       const requestId = ++profileRequestId.current;
       if (!mounted) return;
-
       sessionRef.current = nextSession;
       setSession(nextSession);
       setError("");
-
       if (!nextSession) {
         setProfile(null);
         setLoading(false);
         return;
       }
-
       setLoading(true);
-
       try {
         const currentProfile = await getCurrentProfile(nextSession.user.id);
         if (mounted && profileRequestId.current === requestId) {
           if (!currentProfile?.is_active) {
-          await supabase.auth.signOut();
-          throw new Error("Your account is inactive. Contact an administrator for access.");
-        }
-        setProfile(currentProfile);
+            await supabase.auth.signOut();
+            throw new Error("Your account is inactive. Contact an administrator for access.");
+          }
+          setProfile(currentProfile);
         }
       } catch (profileError) {
         if (mounted && profileRequestId.current === requestId) {
           setProfile(null);
-          setError(
-            profileError?.message || "Unable to load the user profile."
-          );
+          setError(profileError?.message || "Unable to load the user profile.");
         }
       } finally {
-        if (mounted && profileRequestId.current === requestId) {
-          setLoading(false);
-        }
+        if (mounted && profileRequestId.current === requestId) setLoading(false);
       }
     }
 
     async function loadInitialSession() {
       const { data, error: sessionError } = await supabase.auth.getSession();
-
       if (sessionError) {
         if (mounted) {
-          setError(
-            sessionError.message || "Unable to load the current session."
-          );
+          setError(sessionError.message || "Unable to load the current session.");
           setLoading(false);
         }
         return;
       }
-
       await applySession(data.session);
     }
 
     loadInitialSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((authEvent, nextSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((authEvent, nextSession) => {
       if (!mounted) return;
-
       const currentUserId = sessionRef.current?.user?.id;
       const nextUserId = nextSession?.user?.id;
-
       if (authEvent === "SIGNED_OUT" || !nextSession) {
         applySession(null);
         return;
       }
-
-      if (
-        authEvent === "TOKEN_REFRESHED" ||
-        (authEvent === "SIGNED_IN" && currentUserId === nextUserId)
-      ) {
+      if (authEvent === "TOKEN_REFRESHED" || (authEvent === "SIGNED_IN" && currentUserId === nextUserId)) {
         sessionRef.current = nextSession;
         setSession(nextSession);
         return;
       }
-
       applySession(nextSession);
     });
 
@@ -444,42 +295,19 @@ export default function App() {
     };
   }, []);
 
-  if (loading) {
-    return (
-      <div
-        className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-400"
-        role="status"
-      >
-        Loading...
-      </div>
-    );
-  }
+  if (loading) return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-400" role="status">Loading...</div>;
 
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-red-300">
-        <div
-          className="max-w-lg rounded-2xl border border-red-900 bg-red-950/40 p-6"
-          role="alert"
-        >
+        <div className="max-w-lg rounded-2xl border border-red-900 bg-red-950/40 p-6" role="alert">
           <p>{error}</p>
-          <button
-            type="button"
-            onClick={() => supabase.auth.signOut()}
-            className="mt-4 rounded-xl border border-red-800 px-4 py-2 hover:bg-red-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-          >
-            Sign out
-          </button>
+          <button type="button" onClick={() => supabase.auth.signOut()} className="mt-4 rounded-xl border border-red-800 px-4 py-2 hover:bg-red-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400">Sign out</button>
         </div>
       </div>
     );
   }
 
   if (!session) return <Login />;
-
-  return (
-    <BrowserRouter>
-      <AppShell session={session} profile={profile} />
-    </BrowserRouter>
-  );
+  return <BrowserRouter><AppShell session={session} profile={profile} /></BrowserRouter>;
 }

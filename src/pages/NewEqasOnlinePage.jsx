@@ -42,7 +42,7 @@ export default function NewEqasOnlinePage() {
   if (loading) return <div className="py-16 text-center text-slate-400">Loading form...</div>;
 
   return <div className="mx-auto max-w-3xl space-y-5">
-    <Link to="/eqas-online" onClick={(event) => { if (!confirmDiscard()) event.preventDefault(); }} className="inline-flex items-center gap-2 text-slate-400"><ArrowLeft size={18} />Back to EQAS Online</Link>
+    <Link to="/eqas-online" onClick={(event) => { if (!confirmDiscard()) event.preventDefault(); }} className="-ml-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-slate-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"><ArrowLeft size={18} />Back to EQAS Online</Link>
     <header><p className="text-sm text-blue-400">Online quality assurance</p><h1 className="text-3xl font-semibold">New EQAS record</h1></header>
     {error && <div role="alert" className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-300">{error}</div>}
     <form onSubmit={submit} className="grid gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5 md:grid-cols-2">

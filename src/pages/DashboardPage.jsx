@@ -28,7 +28,7 @@ function DashboardCard({
   return (
     <Link
       to={to}
-      className="rounded-2xl border border-slate-800 bg-slate-900 p-5 transition hover:-translate-y-0.5 hover:border-slate-700"
+      className="rounded-2xl border border-slate-800 bg-slate-900 p-5 transition hover:-translate-y-0.5 hover:border-slate-700 hover:brightness-125 hover:saturate-110 hover:shadow-[0_0_0_1px_rgba(168,85,247,0.55),0_8px_20px_rgba(88,28,135,0.22)] focus-visible:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
     >
       <div className="flex justify-between gap-4">
         <div>

@@ -112,7 +112,7 @@ export default function NewUnityRealTimePage() {
         onClick={(event) => {
           if (!confirmDiscard()) event.preventDefault();
         }}
-        className="inline-flex items-center gap-2 text-slate-400"
+        className="-ml-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-slate-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
       >
         <ArrowLeft size={18} aria-hidden="true" />
         Back to Unity Real Time
