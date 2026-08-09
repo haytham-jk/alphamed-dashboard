@@ -1,6 +1,6 @@
 import { supabase } from "../lib/supabase";
 
-const IMPORT_COLUMNS = "id, original_filename, file_sha256, import_mode, status, workbook_sheet_count, total_row_count, valid_row_count, warning_row_count, conflict_row_count, invalid_row_count, excluded_row_count, notes, created_by, created_at, reviewed_by, reviewed_at, committed_by, committed_at, rolled_back_by, rolled_back_at, rollback_reason";
+const IMPORT_COLUMNS = "id, original_filename, file_sha256, import_mode, status, workbook_sheet_count, total_row_count, valid_row_count, warning_row_count, conflict_row_count, invalid_row_count, excluded_row_count, notes, created_by, created_at, reviewed_by, reviewed_at, committed_by, committed_at, rolled_back_by, rolled_back_at, rollback_reason, review_only, duplicate_of_import_id, base_committed_at";
 const ROW_COLUMNS = "id, import_id, sheet_name, source_row_number, section_type, assay_name_raw, assay_name_normalized, material_type, cc_code_raw, product_code_raw, lot_number_raw, lot_number_normalized, release_date_raw, release_date, expiry_date_raw, expiry_date, related_lot_raw, related_lot_normalized, related_material_type, source_values, review_status, proposed_action, issue_codes, review_message, resolution_notes, resolved_by, resolved_at";
 
 async function sha256(file) {
@@ -13,12 +13,22 @@ export async function stageBioplexMatchingImport(file,parsed,mode="Replace") {
   const checksum=await sha256(file);
   const {data:existing,error:existingError}=await supabase.from("bioplex_matching_imports").select("id, status, original_filename, committed_at").eq("file_sha256",checksum).eq("status","Committed").maybeSingle();
   if (existingError) throw existingError;
-  if (existing) throw new Error(`This exact workbook was already committed as import ${existing.id}.`);
-  const {data:created,error}=await supabase.from("bioplex_matching_imports").insert({original_filename:file.name,file_sha256:checksum,import_mode:mode,status:"Review",workbook_sheet_count:parsed.sheetCount}).select(IMPORT_COLUMNS).single();
+  const reviewOnly = Boolean(existing);
+  const {data:created,error}=await supabase.from("bioplex_matching_imports").insert({
+    original_filename:file.name,
+    file_sha256:checksum,
+    import_mode:mode,
+    status:"Review",
+    workbook_sheet_count:parsed.sheetCount,
+    review_only:reviewOnly,
+    duplicate_of_import_id:existing?.id ?? null,
+    notes:reviewOnly ? `Review-only copy of committed import ${existing.id}.` : null,
+  }).select(IMPORT_COLUMNS).single();
   if (error) throw error;
   const payload=parsed.rows.map((row)=>rowPayload(created.id,row));
   for (let index=0;index<payload.length;index+=250) { const {error:rowError}=await supabase.from("bioplex_matching_import_rows").insert(payload.slice(index,index+250)); if(rowError) throw rowError; }
   await refreshBioplexImport(created.id);
+  await prepareBioplexImport(created.id);
   return created.id;
 }
 export async function getBioplexImports(){const {data,error}=await supabase.from("bioplex_matching_imports").select(IMPORT_COLUMNS).order("created_at",{ascending:false});if(error)throw error;return data??[];}
@@ -44,8 +54,34 @@ export async function getBioplexImportRows(importId) {
   return allRows;
 }
 export async function updateBioplexImportRow(rowId,changes){const allowed={assay_name_raw:changes.assayName,assay_name_normalized:String(changes.assayName??"").trim().toUpperCase(),lot_number_raw:changes.lotNumber,lot_number_normalized:String(changes.lotNumber??"").trim().toUpperCase(),release_date:changes.releaseDate||null,expiry_date:changes.expiryDate||null,related_lot_raw:changes.relatedLot||null,related_lot_normalized:String(changes.relatedLot??"").trim().toUpperCase()||null,review_status:changes.reviewStatus,proposed_action:changes.proposedAction,resolution_notes:changes.resolutionNotes||null,resolved_at:new Date().toISOString()};const {error}=await supabase.from("bioplex_matching_import_rows").update(allowed).eq("id",Number(rowId));if(error)throw error;}
+export async function prepareBioplexImport(importId) {
+  const { data, error } = await supabase.rpc("prepare_bioplex_matching_import", {
+    p_import_id: Number(importId),
+  });
+  if (error) throw error;
+  return Number(data);
+}
+
+export async function getBioplexImport(importId) {
+  const { data, error } = await supabase
+    .from("bioplex_matching_imports")
+    .select(IMPORT_COLUMNS)
+    .eq("id", Number(importId))
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function refreshBioplexImport(importId){const {data,error}=await supabase.rpc("refresh_bioplex_import_counts",{p_import_id:Number(importId)});if(error)throw error;return Number(data);}
-export async function commitBioplexImport(importId){const {data,error}=await supabase.rpc("commit_bioplex_matching_import",{p_import_id:Number(importId)});if(error)throw error;return Number(data);}
+export async function commitBioplexImport(importId){
+  const record = await getBioplexImport(importId);
+  if (record.review_only) {
+    throw new Error(`This is a review-only copy of committed import ${record.duplicate_of_import_id}. It cannot be committed.`);
+  }
+  const {data,error}=await supabase.rpc("commit_bioplex_matching_import",{p_import_id:Number(importId)});
+  if(error)throw error;
+  return Number(data);
+}
 export async function rollbackBioplexImport(importId,reason){const {data,error}=await supabase.rpc("rollback_bioplex_matching_import",{p_import_id:Number(importId),p_reason:String(reason??"")});if(error)throw error;return Number(data);}
 export async function findBioplexMatches(lotNumber,materialType="",includeInactive=false){
   const {data,error}=await supabase.rpc("find_bioplex_matching_lots",{p_lot_number:String(lotNumber??"").trim(),p_material_type:materialType||null,p_include_inactive:Boolean(includeInactive)});
@@ -113,4 +149,54 @@ export async function getBioplexLotEvents(lotId) {
     .order("performed_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
+}
+
+async function fetchAllBioplexPages(buildQuery, pageSize = 1000) {
+  const output = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await buildQuery(from, from + pageSize - 1);
+    if (error) throw error;
+    const page = data ?? [];
+    output.push(...page);
+    if (page.length < pageSize) return output;
+  }
+}
+
+export async function getActiveBioplexMatchingSnapshot() {
+  const lots = await fetchAllBioplexPages((from, to) =>
+    supabase
+      .from("bioplex_lots")
+      .select("id, assay_id, material_type, normalized_lot_number, release_date, expiry_date, cc_code, bioplex_assays(assay_name)")
+      .eq("is_active", true)
+      .order("id")
+      .range(from, to)
+  );
+  const relationships = await fetchAllBioplexPages((from, to) =>
+    supabase
+      .from("bioplex_lot_relationships")
+      .select("id, from_lot_id, to_lot_id, relationship_type")
+      .eq("is_active", true)
+      .order("id")
+      .range(from, to)
+  );
+  const lotsById = new Map(lots.map((lot) => [lot.id, lot]));
+  return {
+    lots: lots.map((lot) => ({
+      ...lot,
+      assay_name: lot.bioplex_assays?.assay_name ?? "",
+    })),
+    relationships: relationships.flatMap((relationship) => {
+      const from = lotsById.get(relationship.from_lot_id);
+      const to = lotsById.get(relationship.to_lot_id);
+      if (!from || !to) return [];
+      return [{
+        ...relationship,
+        assay_name: from.bioplex_assays?.assay_name ?? to.bioplex_assays?.assay_name ?? "",
+        from_material_type: from.material_type,
+        from_lot_number: from.normalized_lot_number,
+        to_material_type: to.material_type,
+        to_lot_number: to.normalized_lot_number,
+      }];
+    }),
+  };
 }

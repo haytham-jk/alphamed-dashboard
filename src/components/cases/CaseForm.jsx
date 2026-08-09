@@ -1,3 +1,4 @@
+import { handleInvalidCapture } from "../../utils/formFocus";
 import SelectInput from "../ui/SelectInput";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -102,7 +103,7 @@ export default function CaseForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-5">
+    <form onSubmit={handleSubmit} onInvalidCapture={handleInvalidCapture} noValidate className="space-y-5">
       <CaseFormSection
         title="Case overview"
         description="Record the issue, priority, status, and request type."
@@ -256,22 +257,10 @@ export default function CaseForm({
       </CaseFormSection>
 
       <CaseFormSection
-        title="Progress and follow-up"
-        description="Record the current progress, next action, and target dates."
+        title="Follow-up"
+        description="Record the next action, waiting party, and target dates."
       >
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Progress (%)" error={errors.progress} fieldKey="progress">
-            <input
-              type="number"
-              min="0"
-              max="100"
-              step="1"
-              className={inputClass}
-              value={values.progress}
-              onChange={(event) => patch({ progress: event.target.value })}
-            />
-          </Field>
-
           <Field label="Waiting on">
             <input
               className={inputClass}

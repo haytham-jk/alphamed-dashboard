@@ -1,3 +1,4 @@
+import { formatDateOnly } from "../utils/dateDisplay";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -435,7 +436,7 @@ export default function UnityRealTimePage({ canEdit }) {
                   </button>
                 </td>
                 <td className="p-4">
-                  {record.unity_rt_expiry_date || "Not recorded"}
+                  {formatDateOnly(record.unity_rt_expiry_date)}
                 </td>
                 <td className="p-4">
                   <span
@@ -457,7 +458,7 @@ export default function UnityRealTimePage({ canEdit }) {
                 <td className="p-4">
                   {record.connectivity_type === "None"
                     ? "N/A"
-                    : record.connectivity_expiry_date || "Not recorded"}
+                    : formatDateOnly(record.connectivity_expiry_date)}
                 </td>
                 <td className="p-4">
                   {record.connectivity_type === "None" ? (

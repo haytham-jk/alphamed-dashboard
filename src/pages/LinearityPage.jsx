@@ -1,3 +1,4 @@
+import { formatDateOnly } from "../utils/dateDisplay";
 import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -245,7 +246,7 @@ export default function LinearityPage({ canEdit }) {
                   <Cell className="text-slate-300">
                     {item.isNotRequired
                       ? "N/A"
-                      : item.performed_date || "Not recorded"}
+                      : formatDateOnly(item.performed_date)}
                   </Cell>
 
                   <Cell>
@@ -259,7 +260,7 @@ export default function LinearityPage({ canEdit }) {
                   <Cell className="text-slate-300">
                     {item.isNotRequired
                       ? "N/A"
-                      : item.nextDueDate || "Not scheduled"}
+                      : formatDateOnly(item.nextDueDate, "Not scheduled")}
                   </Cell>
 
                   <Cell className={`font-semibold ${remainingClass}`}>

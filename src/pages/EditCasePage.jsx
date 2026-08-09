@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import useUnsavedChanges from "../hooks/useUnsavedChanges";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import CaseForm from "../components/cases/CaseForm";
 import { createEmptyCaseValues } from "../constants/caseOptions";
 import { getCustomerOptions } from "../services/customers";
 import { getSupportCaseForEdit, updateSupportCase, } from "../services/caseMutations";
-import { ArrowLeft } from "lucide-react";
 
 function toFormValues(row) {
   const customerIds = (row.case_customers ?? []).map(
@@ -102,13 +101,6 @@ export default function EditCasePage({ session }) {
         onCancel={handleCancel}
         onDirtyChange={setDirty}
       />
-      <Link
-        to="/cases"
-        onClick={(event) => {
-          if (!confirmDiscard()) event.preventDefault();
-        }}
-        className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white"
-      ><ArrowLeft size={18} />Back to cases</Link>
     </div>
   );
 }

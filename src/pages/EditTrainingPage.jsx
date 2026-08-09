@@ -1,3 +1,4 @@
+import DatePickerInput from "../components/ui/DatePickerInput";
 import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useState } from "react";
 import useUnsavedChanges from "../hooks/useUnsavedChanges";
@@ -233,14 +234,15 @@ export default function EditTrainingPage({ session }) {
 
         <label>
           Training date
-          <input
-            type="date"
-            className={inputClass}
-            value={values.trainingDate}
-            onChange={(event) =>
-              patch("trainingDate", event.target.value)
-            }
-          />
+          <div className="mt-2">
+            <DatePickerInput
+              value={values.trainingDate}
+              onChange={(event) =>
+                patch("trainingDate", event.target.value)
+              }
+              ariaLabel="Choose training date"
+            />
+          </div>
         </label>
 
         <label className="md:col-span-2">

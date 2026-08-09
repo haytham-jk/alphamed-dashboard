@@ -1,3 +1,4 @@
+import { handleInvalidCapture } from "../utils/formFocus";
 import SelectInput from "../components/ui/SelectInput";
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -16,14 +17,18 @@ function normalizeDashboardResults(rows) {
     .filter((row) => {
       if (row.material_type === "kit") {
         return !row.related_lot_id || (
-          row.relationship_type === "kit_calibrator" &&
-          row.related_material_type === "calibrator"
+          (row.relationship_type === "kit_calibrator" &&
+          row.related_material_type === "calibrator") ||
+          (row.relationship_type === "assay_related" &&
+          row.related_material_type === "qc")
         );
       }
       if (row.material_type === "calibrator") {
         return !row.related_lot_id || (
-          row.relationship_type === "kit_calibrator" &&
-          row.related_material_type === "kit"
+          (row.relationship_type === "kit_calibrator" &&
+          row.related_material_type === "kit") ||
+          (row.relationship_type === "assay_related" &&
+          row.related_material_type === "qc")
         );
       }
       return row.material_type === "qc";
@@ -107,10 +112,10 @@ export default function BioplexMatchingCheckPage({ profile }) {
     <header>
       <p className="text-sm text-blue-400">BioPlex</p>
       <h1 className="text-3xl font-semibold">Matching Check</h1>
-      <p className="mt-1 text-slate-400">Reagents show calibrators, calibrators show reagents, and QC searches show QC details only.</p>
+      <p className="mt-1 text-slate-400">Reagents and calibrators show every active match plus assay-compatible QC. QC searches show the QC material once.</p>
     </header>
 
-    <form onSubmit={search} className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-5 md:grid-cols-[1fr_13rem_auto]">
+    <form onSubmit={search} className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-5 md:grid-cols-[1fr_13rem_auto]" onInvalidCapture={handleInvalidCapture}>
       <input ref={lotRef} className={inputClass} value={lot} onChange={(event) => setLot(event.target.value)} placeholder="Enter any lot number"/>
       <SelectInput className={inputClass} value={type} onChange={(event) => setType(event.target.value)}>
         <option value="">All material types</option>
@@ -146,7 +151,7 @@ export default function BioplexMatchingCheckPage({ profile }) {
         </dl>
         {row.related_lot_id && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-950 p-4">
           <div>
-            <p className="text-xs uppercase text-slate-500">Matching material</p>
+            <p className="text-xs uppercase text-slate-500">{row.relationship_type === "assay_related" ? "Assay-compatible QC" : "Matching material"}</p>
             <p className="mt-1 font-medium">{row.related_material_type}: {row.related_lot_number}</p>
             <p className="mt-1 text-sm text-slate-400">Expiry: {formatBioplexDate(row.related_expiry_date) || "Not recorded"}</p>
           </div>

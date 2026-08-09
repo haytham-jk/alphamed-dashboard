@@ -10,6 +10,24 @@ const overviewColumns = `
   created_at, updated_at
 `;
 
+const installationColumns = `
+  id,
+  customer_id,
+  installation_name,
+  primary_id,
+  unity_rt_expiry_date,
+  connectivity_type,
+  connectivity_expiry_date,
+  service_pack,
+  admin_username,
+  credential_reference,
+  credentials_verified_date,
+  installation_notes,
+  renewal_notes,
+  created_at,
+  updated_at
+`;
+
 function clean(value) {
   const result = String(value || "").trim();
   return result || null;
@@ -57,7 +75,7 @@ export async function getUnityRtInstallations() {
 export async function getUnityRtInstallation(id) {
   const { data, error } = await supabase
     .from("unity_rt_installations")
-    .select("*")
+    .select(installationColumns)
     .eq("id", Number(id))
     .single();
   if (error) throw error;

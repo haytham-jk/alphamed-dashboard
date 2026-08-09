@@ -1,21 +1,13 @@
 import { supabase } from "../lib/supabase";
 
 export async function deleteSupportCase(caseId) {
-  const numericId = Number(caseId);
+  const { data, error } = await supabase.rpc("delete_support_case_atomic", {
+    p_case_id: Number(caseId),
+  });
 
-  const { error: customerLinkError } = await supabase
-    .from("case_customers")
-    .delete()
-    .eq("support_case_id", numericId);
-
-  if (customerLinkError) throw customerLinkError;
-
-  const { error } = await supabase
-    .from("support_cases")
-    .delete()
-    .eq("id", numericId);
-
+  if (error?.code === "42501") throw new Error("You do not have permission to delete this case.");
   if (error) throw error;
+  return data;
 }
 
 export async function deleteCustomer(customerId) {

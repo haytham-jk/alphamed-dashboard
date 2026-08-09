@@ -1,3 +1,4 @@
+import { handleInvalidCapture } from "../utils/formFocus";
 import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Trash2 } from "lucide-react";
@@ -47,7 +48,7 @@ export default function EditEqasOnlinePage() {
     <Link to="/eqas-online" onClick={(event) => { if (!confirmDiscard()) event.preventDefault(); }} className="inline-flex items-center gap-2 text-slate-400"><ArrowLeft size={18} />Back to EQAS Online</Link>
     <header><p className="text-sm text-blue-400">Online quality assurance</p><h1 className="text-3xl font-semibold">Edit EQAS record</h1></header>
     {error && <div role="alert" className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-300">{error}</div>}
-    <form onSubmit={submit} className="grid gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5 md:grid-cols-2">
+    <form onSubmit={submit} className="grid gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5 md:grid-cols-2" onInvalidCapture={handleInvalidCapture}>
       <label className="md:col-span-2">Customer<SelectInput required value={values.customerId} onChange={(event) => patch("customerId", event.target.value)} className={inputClass}><option value="">Select customer</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}</SelectInput></label>
       <label className="md:col-span-2">Lab Name<input required value={values.labName} onChange={(event) => patch("labName", event.target.value)} placeholder="Branch, laboratory, or instrument name" className={inputClass} /></label>
       <label>QCnet ID<input required value={values.qcnetId} onChange={(event) => patch("qcnetId", event.target.value)} placeholder="Email or QCnet account ID" className={inputClass} /><span className="mt-1 block text-xs text-slate-500">Duplicates are allowed.</span></label>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -7,22 +7,18 @@ import {
   X,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getSupportCaseForEdit } from "../services/caseMutations";
+import {
+  getSupportCaseForEdit,
+  resolveSupportCase,
+} from "../services/caseMutations";
 import { deleteSupportCase } from "../services/deletions";
-import { supabase } from "../lib/supabase";
 import { formatDateOnly, getDateUrgency } from "../utils/dateDisplay";
+import { getCaseProgress } from "../utils/caseProgress";
 import {
   CASE_BADGE_CLASS,
   getCasePriorityClass,
   getCaseStatusClass,
 } from "../constants/caseDisplay";
-
-function getLocalDateOnly(date = new Date()) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 function Detail({ label, children, wide = false }) {
   return (
@@ -43,6 +39,7 @@ function ResolveCaseDialog({
   onResolutionChange,
   onCancel,
   onConfirm,
+  resolutionRef,
 }) {
   if (!open) return null;
 
@@ -83,6 +80,7 @@ function ResolveCaseDialog({
         <label className="mt-5 block">
           Resolution summary *
           <textarea
+            ref={resolutionRef}
             autoFocus
             rows={5}
             value={resolution}
@@ -141,6 +139,7 @@ export default function CaseDetailsPage({ canEdit }) {
   const [resolution, setResolution] = useState("");
   const [resolutionError, setResolutionError] = useState("");
   const [resolving, setResolving] = useState(false);
+  const resolutionRef = useRef(null);
 
   const loadRecord = useCallback(() => {
     setLoading(true);
@@ -175,6 +174,13 @@ export default function CaseDetailsPage({ canEdit }) {
       setResolutionError(
         "Enter a resolution summary before resolving the case."
       );
+      window.requestAnimationFrame(() => {
+        resolutionRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+        resolutionRef.current?.focus({ preventScroll: true });
+      });
       return;
     }
 
@@ -183,30 +189,10 @@ export default function CaseDetailsPage({ canEdit }) {
       setResolutionError("");
       setError("");
 
-      const resolvedDate = getLocalDateOnly();
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-      if (userError) throw userError;
-
-      const updateValues = {
-        status: "Resolved",
-        progress: 100,
-        resolved_date: resolvedDate,
-        resolution_summary: summary,
-        last_case_update: new Date().toISOString(),
-        updated_by: user?.id || null,
-      };
-
-      const { error: updateError } = await supabase
-        .from("support_cases")
-        .update(updateValues)
-        .eq("id", caseId);
-      if (updateError) throw updateError;
+      await resolveSupportCase(caseId, summary);
 
       setResolveDialogOpen(false);
-      navigate("/cases?status=Active", {
+      navigate("/cases", {
         state: { message: "Case resolved successfully." },
       });
     } catch (resolveError) {
@@ -224,7 +210,7 @@ export default function CaseDetailsPage({ canEdit }) {
     try {
       setDeleting(true);
       await deleteSupportCase(caseId);
-      navigate("/cases?status=Active", {
+      navigate("/cases", {
         state: { message: "Case deleted successfully." },
       });
     } catch (deleteError) {
@@ -250,6 +236,7 @@ export default function CaseDetailsPage({ canEdit }) {
     .map((link) => link.customers?.customer_name)
     .filter(Boolean);
   const followUp = getDateUrgency(record.follow_up_date);
+  const progress = getCaseProgress(record.status);
   const isTerminal = ["Resolved", "Closed", "Cancelled"].includes(
     record.status
   );
@@ -267,6 +254,7 @@ export default function CaseDetailsPage({ canEdit }) {
         }}
         onCancel={closeResolveDialog}
         onConfirm={handleQuickResolve}
+        resolutionRef={resolutionRef}
       />
 
       <Link
@@ -277,15 +265,16 @@ export default function CaseDetailsPage({ canEdit }) {
         Back to cases
       </Link>
 
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-blue-400">
-            {record.case_reference || "Case details"}
-          </p>
-          <h1 className="text-3xl font-semibold">{record.case_title}</h1>
-        </div>
+      <header className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] lg:items-end">
+        <div className="min-w-0 space-y-4">
+          <div>
+            <p className="text-sm text-blue-400">
+              {record.case_reference || "Case details"}
+            </p>
+            <h1 className="text-3xl font-semibold">{record.case_title}</h1>
+          </div>
 
-        <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={loadRecord}
@@ -323,7 +312,40 @@ export default function CaseDetailsPage({ canEdit }) {
               </button>
             </>
           )}
+          </div>
         </div>
+
+        <section
+          aria-label={`Case progress: ${progress}%`}
+          className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 px-5 py-4 shadow-lg shadow-black/10"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">
+                Case progress
+              </p>
+            </div>
+            <span className="text-3xl font-semibold tabular-nums text-blue-300">
+              {progress}%
+            </span>
+          </div>
+          <div
+            className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-800 ring-1 ring-inset ring-slate-700/70"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow={progress}
+          >
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-blue-600 via-cyan-500 to-emerald-400 transition-[width] duration-500 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className="mt-2.5 flex items-center justify-between text-xs text-slate-500">
+            <span>{record.status}</span>
+            <span>{progress === 100 ? "Complete" : "Status driven"}</span>
+          </div>
+        </section>
       </header>
 
       {error && (
@@ -353,7 +375,6 @@ export default function CaseDetailsPage({ canEdit }) {
             {record.priority}
           </span>
         </Detail>
-        <Detail label="Progress">{record.progress ?? 0}%</Detail>
         <Detail label="Created date">
           {formatDateOnly(record.case_created_on)}
         </Detail>

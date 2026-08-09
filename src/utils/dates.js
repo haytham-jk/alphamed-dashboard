@@ -5,17 +5,23 @@ export function getLocalDateOnly(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
-export function formatDateOnly(value, fallback = "Not recorded", locale = "en-AE") {
+export function formatDateOnly(value, fallback = "Not recorded") {
   if (!value) return fallback;
-  const parts = String(value).slice(0, 10).split("-").map(Number);
-  if (parts.length !== 3 || parts.some((part) => !Number.isFinite(part))) return String(value);
-  const [year, month, day] = parts;
-  if (!year || !month || !day) return String(value);
-  return new Intl.DateTimeFormat(locale, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(year, month - 1, day));
+
+  const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return fallback;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  const valid =
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day;
+
+  if (!valid) return fallback;
+  return `${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}/${year}`;
 }
 
 export function getDateUrgency(value, warningDays = 7) {

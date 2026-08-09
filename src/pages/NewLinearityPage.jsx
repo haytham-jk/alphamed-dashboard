@@ -1,3 +1,4 @@
+import { handleInvalidCapture } from "../utils/formFocus";
 import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useMemo, useState } from "react";
 import useUnsavedChanges from "../hooks/useUnsavedChanges";
@@ -192,7 +193,7 @@ export default function NewLinearityPage() {
       <form
         onSubmit={handleSubmit}
         className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5 md:grid-cols-2"
-      >
+       onInvalidCapture={handleInvalidCapture}>
         <label>
           <span className="text-sm font-medium">Customer</span>
           <SelectInput

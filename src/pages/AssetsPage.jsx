@@ -1,3 +1,4 @@
+import { formatDateOnly } from "../utils/dateDisplay";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -277,8 +278,7 @@ export default function AssetsPage({ canEdit }) {
                                 to={destination}
                                 className="block p-4"
                               >
-                                {asset.installation_date ||
-                                  "Not recorded"}
+                                {formatDateOnly(asset.installation_date)}
                               </Link>
                             </td>
 

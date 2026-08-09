@@ -93,6 +93,19 @@ export async function updateSupportCase(caseId, values) {
   if (error) throw friendlyMutationError(error);
 }
 
+export async function resolveSupportCase(caseId, resolutionSummary) {
+  const summary = String(resolutionSummary ?? "").trim();
+  if (!summary) throw new Error("Enter a resolution summary before resolving the case.");
+
+  const { data, error } = await supabase.rpc("resolve_support_case", {
+    p_case_id: Number(caseId),
+    p_resolution_summary: summary,
+  });
+
+  if (error) throw friendlyMutationError(error);
+  return data;
+}
+
 export async function getSupportCaseForEdit(caseId) {
   const { data, error } = await supabase
     .from("support_cases")

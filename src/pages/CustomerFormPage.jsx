@@ -1,3 +1,4 @@
+import { handleInvalidCapture } from "../utils/formFocus";
 import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useState } from "react";
 import useUnsavedChanges from "../hooks/useUnsavedChanges";
@@ -40,8 +41,23 @@ export default function CustomerFormPage() {
   async function handleSubmit(event) {
     event.preventDefault();
     if (saving) return;
-    const incomplete = values.contacts.find((contact) => !contact.name.trim() || !contact.designation);
-    if (incomplete) { setError("Every contact requires a name and designation."); return; }
+    const incompleteIndex = values.contacts.findIndex(
+      (contact) => !contact.name.trim() || !contact.designation
+    );
+    if (incompleteIndex >= 0) {
+      setError("Every contact requires a name and designation.");
+      window.requestAnimationFrame(() => {
+        const contactCard = document.querySelector(
+          `[data-contact-index="${incompleteIndex}"]`
+        );
+        const invalidField = contactCard?.querySelector(
+          'input[name="contactName"], select[name="contactDesignation"]'
+        );
+        contactCard?.scrollIntoView({ behavior: "smooth", block: "center" });
+        invalidField?.focus({ preventScroll: true });
+      });
+      return;
+    }
     try {
       setSaving(true); setError("");
       if (editing) await updateCustomer(customerId, values); else await createCustomer(values);
@@ -62,7 +78,7 @@ export default function CustomerFormPage() {
     <Link to="/customers" onClick={(event) => { if (!confirmDiscard()) event.preventDefault(); }} className="-ml-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-slate-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"><ArrowLeft size={18} />Back to customers</Link>
     <h1 className="text-3xl font-semibold">{editing ? "Edit customer" : "New customer"}</h1>
     {error && <div className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-300">{error}</div>}
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} onInvalidCapture={handleInvalidCapture} className="space-y-5">
       <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900 p-5">
         <label className="block">Customer name<input required className={inputClass} value={values.customerName} onChange={(event) => patch("customerName", event.target.value)} /></label>
         <label className="block">Emirate<SelectInput className={inputClass} value={values.emirate} onChange={(event) => patch("emirate", event.target.value)}><option value="">Select Emirate</option>{EMIRATES.map((emirate) => <option key={emirate}>{emirate}</option>)}</SelectInput></label>
@@ -70,7 +86,7 @@ export default function CustomerFormPage() {
       </section>
       <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900 p-5">
         <div className="flex items-center justify-between"><div><h2 className="text-xl font-semibold">Customer contacts</h2><p className="text-sm text-slate-400">Add laboratory contacts for this customer.</p></div><button type="button" onClick={addContact} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm"><Plus size={16} />Add contact</button></div>
-        {values.contacts.map((contact, index) => <article key={contact.key} className="rounded-xl border border-slate-800 bg-slate-950 p-4"><div className="mb-3 flex justify-between"><h3 className="font-medium">Contact {index + 1}</h3><button type="button" onClick={() => removeContact(contact.key)} className="text-red-300" aria-label={`Remove contact ${index + 1}`}><Trash2 size={18} /></button></div><div className="grid gap-4 md:grid-cols-2"><label>Name<input required className={inputClass} value={contact.name} onChange={(event) => updateContact(contact.key, "name", event.target.value)} /></label><label>Designation<SelectInput required className={inputClass} value={contact.designation} onChange={(event) => updateContact(contact.key, "designation", event.target.value)}>{DESIGNATIONS.map((designation) => <option key={designation}>{designation}</option>)}</SelectInput></label><label>Number<input type="tel" className={inputClass} value={contact.phoneNumber} onChange={(event) => updateContact(contact.key, "phoneNumber", event.target.value)} /></label><label>Email<input type="email" className={inputClass} value={contact.email} onChange={(event) => updateContact(contact.key, "email", event.target.value)} /></label></div></article>)}
+        {values.contacts.map((contact, index) => <article key={contact.key} data-contact-index={index} className="rounded-xl border border-slate-800 bg-slate-950 p-4"><div className="mb-3 flex justify-between"><h3 className="font-medium">Contact {index + 1}</h3><button type="button" onClick={() => removeContact(contact.key)} className="text-red-300" aria-label={`Remove contact ${index + 1}`}><Trash2 size={18} /></button></div><div className="grid gap-4 md:grid-cols-2"><label>Name<input required name="contactName" className={inputClass} value={contact.name} onChange={(event) => updateContact(contact.key, "name", event.target.value)} /></label><label>Designation<SelectInput required name="contactDesignation" className={inputClass} value={contact.designation} onChange={(event) => updateContact(contact.key, "designation", event.target.value)}>{DESIGNATIONS.map((designation) => <option key={designation}>{designation}</option>)}</SelectInput></label><label>Number<input type="tel" className={inputClass} value={contact.phoneNumber} onChange={(event) => updateContact(contact.key, "phoneNumber", event.target.value)} /></label><label>Email<input type="email" className={inputClass} value={contact.email} onChange={(event) => updateContact(contact.key, "email", event.target.value)} /></label></div></article>)}
         {!values.contacts.length && <div className="rounded-xl border border-dashed border-slate-700 p-6 text-center text-slate-400">No contacts added.</div>}
       </section>
       <div className="flex flex-col-reverse justify-between gap-3 sm:flex-row">{editing ? <button type="button" onClick={handleDelete} disabled={deleting} className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-800 px-4 py-2 text-red-300"><Trash2 size={17} />{deleting ? "Deleting..." : "Delete customer"}</button> : <Link to="/customers" onClick={(event) => { if (!confirmDiscard()) event.preventDefault(); }} className="rounded-xl border border-slate-700 px-4 py-2 text-center">Back to customers</Link>}<button type="submit" disabled={saving} className="rounded-xl bg-blue-600 px-4 py-2 font-medium disabled:opacity-60">{saving ? "Saving..." : "Save customer"}</button></div>

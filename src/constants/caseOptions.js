@@ -51,7 +51,7 @@ export function createEmptyCaseValues() {
     caseNumber: "",
     relatedIssues: "",
     requestType: "Support Request",
-    progress: 10,
+    progress: 0,
     caseCreatedOn: new Date().toISOString().slice(0, 10),
     nextAction: "",
     waitingOn: "",

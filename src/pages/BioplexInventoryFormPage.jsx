@@ -5,6 +5,7 @@ import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { findBioplexMatches } from "../services/bioplexMatching";
 import { getBioplexCount, getBioplexCustomers, saveBioplexCount } from "../services/bioplexInventory";
 import { formatBioplexDate, localDateOnly } from "../utils/bioplexDates";
+import { buildBioplexInventoryGroups } from "../utils/bioplexInventoryGrouping";
 
 const inputClass = "w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 outline-none focus:border-blue-500";
 const makeKey = () => crypto.randomUUID();
@@ -111,14 +112,14 @@ export default function BioplexInventoryFormPage() {
   }, [editing, sessionId]);
 
   const grouped = useMemo(() => {
-    const childKeys = new Set(links.map((link) => link.childKey));
-    return items.filter((item) => !childKeys.has(item.clientKey)).map((root) => ({
-      root,
-      children: links
-        .filter((link) => link.parentKey === root.clientKey)
-        .map((link) => items.find((item) => item.clientKey === link.childKey))
-        .filter(Boolean),
-    }));
+    const result = buildBioplexInventoryGroups(items, links);
+    return [
+      ...result.reagentGroups.map((group) => ({
+        root: group.root,
+        children: group.children.map((entry) => entry.item),
+      })),
+      ...result.standalone.map((root) => ({ root, children: [] })),
+    ];
   }, [items, links]);
 
   function clearLookup(type) {

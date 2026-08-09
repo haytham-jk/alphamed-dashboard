@@ -5,12 +5,15 @@ import { ArrowLeft, Check, ChevronDown, ChevronUp, Save, Upload, XCircle } from 
 import {
   bulkUpdateBioplexImportRows,
   commitBioplexImport,
+  getActiveBioplexMatchingSnapshot,
+  getBioplexImport,
   getBioplexImportBlockingRows,
   getBioplexImportRows,
   refreshBioplexImport,
   updateBioplexImportRow,
 } from "../services/bioplexMatching";
 import { formatBioplexDate } from "../utils/bioplexDates";
+import { buildParsedReviewModel, summarizeImportImpact } from "../utils/bioplexImportReviewModel";
 
 const inputClass = "w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20";
 const FILTERS = ["All", "Blocking only", "Pending", "Valid", "Warning", "Exact Duplicate", "Possible Duplicate", "Conflict", "Invalid", "Excluded", "Resolved"];
@@ -49,6 +52,10 @@ export default function BioplexMatchingImportReviewPage() {
   const { importId } = useParams();
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
+  const [importRecord, setImportRecord] = useState(null);
+  const [snapshot, setSnapshot] = useState({ lots: [], relationships: [] });
+  const [reviewView, setReviewView] = useState("Rows");
+  const [replaceConfirmation, setReplaceConfirmation] = useState("");
   const [drafts, setDrafts] = useState({});
   const [selected, setSelected] = useState(new Set());
   const [editingId, setEditingId] = useState(null);
@@ -70,8 +77,14 @@ export default function BioplexMatchingImportReviewPage() {
     try {
       setLoading(true);
       setError("");
-      const result = await getBioplexImportRows(importId);
+      const [result, nextImport, nextSnapshot] = await Promise.all([
+        getBioplexImportRows(importId),
+        getBioplexImport(importId),
+        getActiveBioplexMatchingSnapshot(),
+      ]);
       setRows(result);
+      setImportRecord(nextImport);
+      setSnapshot(nextSnapshot);
       setDrafts(Object.fromEntries(result.map((row) => [row.id, draftFromRow(row)])));
       setSelected(new Set());
     } catch (loadError) {
@@ -137,6 +150,15 @@ export default function BioplexMatchingImportReviewPage() {
     });
     return result;
   }, [rows, drafts, visibleRows.length, selected.size, blockingRows.length]);
+
+  const stagedModel = useMemo(
+    () => buildParsedReviewModel(rows, snapshot),
+    [rows, snapshot]
+  );
+  const impact = useMemo(
+    () => summarizeImportImpact(stagedModel, snapshot, importRecord?.import_mode ?? "Merge"),
+    [stagedModel, snapshot, importRecord]
+  );
 
   function patch(rowId, changes) {
     setDrafts((current) => ({ ...current, [rowId]: { ...current[rowId], ...changes } }));
@@ -221,6 +243,14 @@ export default function BioplexMatchingImportReviewPage() {
       });
       return;
     }
+    if (importRecord?.review_only) {
+      setError(`This is a review-only copy of committed import ${importRecord.duplicate_of_import_id}. Final import is disabled.`);
+      return;
+    }
+    if (importRecord?.import_mode === "Replace" && replaceConfirmation !== "REPLACE") {
+      setError('Type REPLACE in the confirmation field before finalizing this replacement import.');
+      return;
+    }
     try {
       setBusy(true);
       setError("");
@@ -242,12 +272,25 @@ export default function BioplexMatchingImportReviewPage() {
   if (loading) return <div className="text-slate-400">Loading matching import review...</div>;
   return <div className="mx-auto max-w-[96rem] space-y-5">
     <header className="flex flex-wrap items-start justify-between gap-4">
-      <div><p className="text-sm text-blue-400">BioPlex Matching Imports</p><h1 className="text-3xl font-semibold">Review import {importId}</h1><p className="mt-1 text-slate-400">Filter, select, and apply decisions to multiple rows without refreshing the page.</p></div>
+      <div><p className="text-sm text-blue-400">BioPlex Matching Imports</p><h1 className="text-3xl font-semibold">Review import {importId}</h1><p className="mt-1 text-sm text-slate-300">Mode: <strong>{importRecord?.import_mode ?? "Loading"}</strong></p><p className="mt-1 text-slate-400">Filter, select, and apply decisions to multiple rows without refreshing the page.</p>{importRecord?.review_only && <p className="mt-2 rounded-lg border border-cyan-800 bg-cyan-950/30 px-3 py-2 text-sm text-cyan-200">Review only. Duplicate of committed import {importRecord.duplicate_of_import_id}. This copy cannot be committed.</p>}</div>
       <Link to="/bioplex-matching-imports" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white"><ArrowLeft size={18}/>Back to imports</Link>
     </header>
     {error && <div className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-300" role="alert">{error}</div>}
     <section className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:grid-cols-3 lg:grid-cols-6">
       {Object.entries(summary).map(([key, value]) => <Metric key={key} label={key} value={value}/>) }
+    </section>
+
+    <section className={`space-y-4 rounded-2xl border p-5 ${importRecord?.import_mode === "Replace" ? "border-amber-800 bg-amber-950/20" : "border-blue-900 bg-blue-950/20"}`}>
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" onClick={() => setReviewView("Rows")} className={`rounded-xl px-4 py-2 ${reviewView === "Rows" ? "bg-blue-600" : "border border-slate-700"}`}>Review rows</button>
+        <button type="button" onClick={() => setReviewView("Materials")} className={`rounded-xl px-4 py-2 ${reviewView === "Materials" ? "bg-blue-600" : "border border-slate-700"}`}>Materials ({stagedModel.materials.length})</button>
+        <button type="button" onClick={() => setReviewView("Relationships")} className={`rounded-xl px-4 py-2 ${reviewView === "Relationships" ? "bg-blue-600" : "border border-slate-700"}`}>Relationships ({stagedModel.relationships.length})</button>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+        <Metric label="New materials" value={impact.newMaterials}/><Metric label="Existing materials" value={impact.existingMaterials}/><Metric label="New relationships" value={impact.newRelationships}/><Metric label="Existing relationships" value={impact.existingRelationships}/><Metric label="Lots deactivated" value={impact.deactivateLots}/><Metric label="Links deactivated" value={impact.deactivateRelationships}/>
+      </div>
+      {importRecord?.import_mode === "Replace" && <><p className="text-sm text-amber-200">Replace deactivates the current active dataset before approved rows are committed. Omitted assays: {impact.omittedAssays.length ? impact.omittedAssays.join(", ") : "None"}.</p><label className="block max-w-sm text-sm">Type REPLACE before Final import<input className={`${inputClass} mt-2`} value={replaceConfirmation} onChange={(event) => setReplaceConfirmation(event.target.value)}/></label></>}
+      {reviewView !== "Rows" && <div className="max-h-96 overflow-auto rounded-xl border border-slate-800"><table className="min-w-full text-sm"><thead className="sticky top-0 bg-slate-950 text-left text-slate-400"><tr><th className="p-3">Assay</th><th className="p-3">Material / From</th><th className="p-3">Related / To</th><th className="p-3">Classification</th><th className="p-3">Sources</th><th className="p-3">Merged source</th></tr></thead><tbody>{(reviewView === "Materials" ? stagedModel.materials : stagedModel.relationships).map((item) => <tr key={item.key} className="border-t border-slate-800"><td className="p-3">{item.assay}</td><td className="p-3 font-medium">{item.lotNumber ?? `${item.fromLot} (${item.fromType})`}</td><td className="p-3">{item.toLot ? `${item.toLot} (${item.toType})` : item.materialType}</td><td className="p-3">{item.classification}</td><td className="p-3">{[...new Set(item.sources)].join(", ")}</td><td className="p-3 text-cyan-300">{[...new Set((item.inheritedMergedCells ?? []).map((cell) => cell.mergeRange))].join(", ") || "Direct"}</td></tr>)}</tbody></table></div>}
     </section>
 
     <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900 p-5">
@@ -274,7 +317,7 @@ export default function BioplexMatchingImportReviewPage() {
       <button disabled={busy || !selected.size} onClick={() => bulkAction("Exclude")} className="ml-auto inline-flex items-center gap-2 rounded-xl border border-red-800 px-4 py-2 text-red-300 disabled:opacity-40"><XCircle size={17}/>Exclude selected</button>
       <button disabled={busy || !selected.size} onClick={() => bulkAction("Skip duplicate")} className="rounded-xl border border-amber-800 px-4 py-2 text-amber-300 disabled:opacity-40">Skip as duplicates</button>
       <button disabled={busy || !selected.size} onClick={() => bulkAction("Accept")} className="inline-flex items-center gap-2 rounded-xl border border-emerald-800 px-4 py-2 text-emerald-300 disabled:opacity-40"><Check size={17}/>Accept selected</button>
-      <button type="button" disabled={busy || blockingRows.length > 0} onClick={commitImport} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2 font-medium disabled:cursor-not-allowed disabled:opacity-50"><Upload size={18}/>Final import</button>
+      <button type="button" disabled={busy || blockingRows.length > 0 || importRecord?.review_only || (importRecord?.import_mode === "Replace" && replaceConfirmation !== "REPLACE")} onClick={commitImport} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2 font-medium disabled:cursor-not-allowed disabled:opacity-50"><Upload size={18}/>Final import</button>
     </section>
 
     <div className="overflow-x-auto rounded-2xl border border-slate-800">

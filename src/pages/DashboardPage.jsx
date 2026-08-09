@@ -1,3 +1,4 @@
+import { formatDateOnly } from "../utils/dateDisplay";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -289,7 +290,7 @@ export default function DashboardPage({ canEdit }) {
               <div className="text-sm sm:text-right">
                 <p className="text-xs uppercase tracking-wide text-slate-500">Next due</p>
                 <p className="mt-1 text-slate-300">
-                  {item.nextDueDate || "Not scheduled"}
+                  {formatDateOnly(item.nextDueDate, "Not scheduled")}
                 </p>
               </div>
               <span

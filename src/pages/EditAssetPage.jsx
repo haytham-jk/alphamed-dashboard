@@ -1,3 +1,4 @@
+import { handleInvalidCapture } from "../utils/formFocus";
 import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useMemo, useState } from "react";
 import useUnsavedChanges from "../hooks/useUnsavedChanges";
@@ -131,7 +132,7 @@ export default function EditAssetPage() {
       <form
         onSubmit={handleSubmit}
         className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5 md:grid-cols-2"
-      >
+       onInvalidCapture={handleInvalidCapture}>
         <label className="md:col-span-2">
           Customer
           <SelectInput

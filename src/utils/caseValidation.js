@@ -26,7 +26,6 @@ export function validateCase(values) {
   const errors = {};
   const customerIds = normalizeIds(values.customerIds);
   const primaryCustomerId = normalizeId(values.primaryCustomerId);
-  const progress = Number(values.progress);
 
   if (!String(values.title || "").trim()) {
     errors.title = "Case title is required.";
@@ -60,9 +59,6 @@ export function validateCase(values) {
     }
   }
 
-  if (!Number.isFinite(progress) || progress < 0 || progress > 100) {
-    errors.progress = "Progress must be between 0 and 100.";
-  }
 
   // Preserve resolution validation for normal create/edit workflows.
   if (TERMINAL_STATUSES.includes(values.status)) {
