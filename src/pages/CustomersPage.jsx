@@ -2,160 +2,20 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Search, Users } from "lucide-react";
 import { getCustomers } from "../services/customers";
-
-function getContactSummary(customer) {
-  const count = customer.customer_contacts?.length ?? 0;
-  if (count === 0) return "No contacts added";
-  if (count === 1) return "1 contact added";
-  return `${count} contacts added`;
-}
-
+function getContactSummary(customer) { const count = customer.customer_contacts?.length ?? 0; return count === 0 ? "No contacts added" : count === 1 ? "1 contact added" : `${count} contacts added`; }
 export default function CustomersPage({ canEdit }) {
-  const [customers, setCustomers] = useState([]);
-  const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  function loadCustomers() {
-    setLoading(true);
-    setError("");
-    getCustomers()
-      .then(setCustomers)
-      .catch((loadError) =>
-        setError(loadError?.message || "Unable to load customers.")
-      )
-      .finally(() => setLoading(false));
-  }
-
-  useEffect(() => {
-    loadCustomers();
-  }, []);
-
+  const [customers, setCustomers] = useState([]); const [query, setQuery] = useState(""); const [accreditationFilter, setAccreditationFilter] = useState("All"); const [loading, setLoading] = useState(true); const [error, setError] = useState("");
+  useEffect(() => { setLoading(true); getCustomers().then(setCustomers).catch((loadError) => setError(loadError?.message || "Unable to load customers.")).finally(() => setLoading(false)); }, []);
   const filtered = useMemo(() => {
     const search = query.trim().toLowerCase();
-
     return customers.filter((customer) => {
-      if (!search) return true;
-
-      const searchableValues = [
-        customer.customer_name,
-        customer.emirate,
-        ...(customer.customer_contacts ?? []).flatMap((contact) => [
-          contact.name,
-          contact.designation,
-          contact.email,
-          contact.phone_number,
-        ]),
-      ];
-
-      return searchableValues.some((value) =>
-        String(value || "").toLowerCase().includes(search)
-      );
+      const matchesSearch = !search || [customer.customer_name, customer.emirate, customer.iso_eiac_accreditation_number, ...(customer.customer_contacts ?? []).flatMap((contact) => [contact.name, contact.designation, contact.email, contact.phone_number])].some((value) => String(value || "").toLowerCase().includes(search));
+      const hasIso = Boolean(customer.is_iso_eiac_accredited);
+      const hasCap = Boolean(customer.is_cap_accredited);
+      const matchesAccreditation = accreditationFilter === "All" || (accreditationFilter === "ISO/EIAC" && hasIso) || (accreditationFilter === "CAP" && hasCap) || (accreditationFilter === "Both" && hasIso && hasCap);
+      return matchesSearch && matchesAccreditation;
     });
-  }, [customers, query]);
-
-  if (loading) {
-    return <div className="text-slate-400">Loading customers...</div>;
-  }
-
-  return (
-    <div className="space-y-5">
-      <header className="flex items-end justify-between gap-4">
-        <div>
-          <p className="text-sm text-blue-400">Reference data</p>
-          <h1 className="text-3xl font-semibold">Customers</h1>
-        </div>
-        {canEdit && (
-          <Link
-            to="/customers/new"
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2"
-          >
-            <Plus size={17} aria-hidden="true" />
-            New customer
-          </Link>
-        )}
-      </header>
-
-      <label className="relative block">
-        <span className="sr-only">Search customers</span>
-        <Search
-          className="absolute left-3 top-3 text-slate-500"
-          size={18}
-          aria-hidden="true"
-        />
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search by customer or contact..."
-          className="w-full rounded-xl border border-slate-700 bg-slate-950 py-2 pl-10 pr-3"
-        />
-      </label>
-
-      {error && (
-        <div className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-300">
-          {error}
-        </div>
-      )}
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        {filtered.map((customer) => {
-          const cardContent = (
-            <>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-lg font-semibold">
-                    {customer.customer_name || "Unnamed customer"}
-                  </h2>
-                  <p className="text-sm text-slate-500">
-                    {customer.emirate || "Unknown"}
-                  </p>
-                </div>
-                <span
-                  className={
-                    customer.is_active
-                      ? "text-emerald-300"
-                      : "text-slate-500"
-                  }
-                >
-                  {customer.is_active ? "Active" : "Inactive"}
-                </span>
-              </div>
-
-              <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-slate-950 px-3 py-2 text-sm text-slate-400">
-                <Users size={15} aria-hidden="true" />
-                {getContactSummary(customer)}
-              </div>
-            </>
-          );
-
-          if (canEdit) {
-            return (
-              <Link
-                key={customer.id}
-                to={`/customers/${customer.id}/edit`}
-                className="block rounded-2xl border border-slate-800 bg-slate-900 p-5 hover:bg-slate-800/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-              >
-                {cardContent}
-              </Link>
-            );
-          }
-
-          return (
-            <article
-              key={customer.id}
-              className="rounded-2xl border border-slate-800 bg-slate-900 p-5"
-            >
-              {cardContent}
-            </article>
-          );
-        })}
-      </div>
-
-      {!filtered.length && (
-        <div className="py-8 text-center text-slate-500">
-          No customers match the search.
-        </div>
-      )}
-    </div>
-  );
+  }, [customers, query, accreditationFilter]);
+  if (loading) return <div className="text-slate-400">Loading customers...</div>;
+  return <div className="space-y-5"><header className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-sm text-blue-400">Reference data</p><h1 className="text-3xl font-semibold">Customers</h1></div>{canEdit && <Link to="/customers/new" className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 font-medium"><Plus size={18}/>New customer</Link>}</header><div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_15rem]"><label className="relative block"><span className="sr-only">Search customers</span><Search className="absolute left-3 top-2.5 text-slate-500" size={18}/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by customer, accreditation, or contact..." className="w-full rounded-xl border border-slate-700 bg-slate-950 py-2 pl-10 pr-3"/></label><label><span className="sr-only">Accreditation filter</span><select value={accreditationFilter} onChange={(event) => setAccreditationFilter(event.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 pr-10"><option>All</option><option>ISO/EIAC</option><option>CAP</option><option>Both</option></select></label></div>{error && <div className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-300">{error}</div>}<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{filtered.map((customer) => <Link to={`/customers/${customer.id}/overview`} key={customer.id} className="block rounded-2xl border border-slate-800 bg-slate-900 p-5 transition-colors hover:border-blue-700 hover:bg-slate-800/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"><div className="flex items-start justify-between gap-3"><div><h2 className="text-lg font-semibold">{customer.customer_name || "Unnamed customer"}</h2><p className="text-sm text-slate-400">{customer.emirate || "Unknown"}</p></div><span className={`rounded-full px-2 py-1 text-xs ${customer.is_active ? "bg-emerald-950 text-emerald-300" : "bg-slate-800 text-slate-400"}`}>{customer.is_active ? "Active" : "Inactive"}</span></div><div className="mt-3 flex flex-wrap gap-2">{customer.is_iso_eiac_accredited && <span className="rounded-full bg-blue-950 px-3 py-1 text-xs text-blue-300">ISO/EIAC{customer.iso_eiac_accreditation_number ? ` · ${customer.iso_eiac_accreditation_number}` : ""}</span>}{customer.is_cap_accredited && <span className="rounded-full bg-violet-950 px-3 py-1 text-xs text-violet-300">CAP</span>}</div><p className="mt-4 flex items-center gap-2 text-sm text-slate-400"><Users size={16}/>{getContactSummary(customer)}</p></Link>)}</div>{!filtered.length && <div className="rounded-xl border border-dashed border-slate-700 p-8 text-center text-slate-400">No customers match the search.</div>}</div>;
 }

@@ -73,3 +73,44 @@ export function summarizeImportImpact(model, snapshot, mode) {
     omittedAssays: mode === "Replace" ? [...activeAssays].filter((assay) => !importedAssays.has(assay)).sort() : [],
   };
 }
+
+function todayIso() {
+  const date = new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+export function classifyParsedImportRows(rows, snapshot, currentDate = todayIso()) {
+  const activeLots = new Set((snapshot.lots ?? []).map((lot) => materialKey(lot.assay_name, lot.material_type, lot.normalized_lot_number)));
+  const activeRelationships = new Set((snapshot.relationships ?? []).map((item) => relationshipKey(item.assay_name, item.from_material_type, item.from_lot_number, item.to_material_type, item.to_lot_number)));
+  const activeKitAssays = new Set((snapshot.lots ?? []).filter((lot) => lot.material_type === "kit").map((lot) => normalized(lot.assay_name)));
+  const workbook = buildParsedReviewModel(rows, { lots: [], relationships: [] });
+  const workbookRelationships = new Set(workbook.relationships.map((item) => item.key));
+  const newKitAssays = new Set(workbook.materials.filter((item) => item.materialType === "kit").map((item) => normalized(item.assay)));
+
+  return rows.map((row) => {
+    const assay = row.assayNameNormalized;
+    const type = row.materialType;
+    const lot = row.lotNumberNormalized;
+    const issues = new Set(row.issueCodes ?? []);
+    const materialExists = activeLots.has(materialKey(assay, type, lot));
+    const direction = directionFor(row);
+    const relKey = direction ? relationshipKey(assay, direction.fromType, direction.fromLot, direction.toType, direction.toLot) : "";
+    const relationshipExists = relKey && activeRelationships.has(relKey);
+
+    if (!row.expiryDate) issues.add("MISSING_EXPIRY");
+    if (row.expiryDate && row.expiryDate < currentDate) issues.add("EXPIRED_LOT");
+    if (type === "kit" && !row.relatedLotNormalized) issues.add("MISSING_CALIBRATOR");
+    if (type === "calibrator") {
+      const hasRelationship = [...workbookRelationships].some((key) => key.startsWith(`${normalized(assay)}|KIT|`) && key.includes(`|CALIBRATOR|${normalized(lot)}`));
+      if (!hasRelationship) issues.add("MISSING_REAGENT");
+    }
+    if (type === "qc" && !activeKitAssays.has(normalized(assay)) && !newKitAssays.has(normalized(assay))) issues.add("MISSING_COMPATIBLE_KIT");
+
+    if (issues.has("EXPIRED_LOT")) return { ...row, issueCodes: [...issues], reviewStatus: "Excluded", proposedAction: "Exclude", reviewMessage: "Expired lot, not eligible for import." };
+    if (materialExists && (!direction || relationshipExists)) return { ...row, issueCodes: [...issues, "EXISTING_IN_DATABASE"], reviewStatus: "Exact Duplicate", proposedAction: "Skip Duplicate", reviewMessage: "Material and relationship already exist. Not imported." };
+    const mandatory = ["MISSING_EXPIRY", "MISSING_CALIBRATOR", "MISSING_REAGENT", "MISSING_COMPATIBLE_KIT", "INVALID_DATE"];
+    if (mandatory.some((code) => issues.has(code))) return { ...row, issueCodes: [...issues], reviewStatus: "Invalid", proposedAction: "Review", reviewMessage: [...issues].join(", ") };
+    if (materialExists && direction && !relationshipExists) return { ...row, issueCodes: [...issues, "NEW_RELATIONSHIP"], reviewStatus: "Valid", proposedAction: "Keep Existing", reviewMessage: "Existing material with a new relationship." };
+    return { ...row, issueCodes: [...issues], reviewStatus: row.reviewStatus === "Exact Duplicate" ? row.reviewStatus : "Valid", proposedAction: row.reviewStatus === "Exact Duplicate" ? "Skip Duplicate" : "Create" };
+  });
+}

@@ -1,3 +1,4 @@
+import "./caseCustomerScrollbar.css";
 import { useId, useMemo, useState } from "react";
 
 function normalizeId(value) {
@@ -110,7 +111,7 @@ export default function CaseCustomerSelector({
             Select one customer. Additional customers are optional.
           </p>
 
-          <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
+          <div className="case-customer-scrollbar max-h-80 space-y-2 overflow-y-auto pr-2" style={{ scrollbarColor: "#475569 #020617", scrollbarWidth: "thin" }}>
             {filteredCustomers.map((customer) => {
               const customerId = normalizeId(customer.id);
               const selected = selectedIds.includes(customerId);

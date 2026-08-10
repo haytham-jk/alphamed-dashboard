@@ -36,10 +36,12 @@ const BioplexMatchingImportReviewPage = lazy(() => import("./pages/BioplexMatchi
 const BioplexInventoryFormPage = lazy(() => import("./pages/BioplexInventoryFormPage"));
 const BioplexInventoryDetailsPage = lazy(() => import("./pages/BioplexInventoryDetailsPage"));
 const BioplexInventoryReportPage = lazy(() => import("./pages/BioplexInventoryReportPage"));
+const BioplexLotExpiryMaintenancePage = lazy(() => import("./pages/BioplexLotExpiryMaintenancePage"));
 const CaseDetailsPage = lazy(() => import("./pages/CaseDetailsPage"));
 const CasesPage = lazy(() => import("./pages/CasesPage"));
 const CustomerFormPage = lazy(() => import("./pages/CustomerFormPage"));
 const CustomersPage = lazy(() => import("./pages/CustomersPage"));
+const CustomerSiteOverviewPage = lazy(() => import("./pages/CustomerSiteOverviewPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const EditAssetPage = lazy(() => import("./pages/EditAssetPage"));
 const EditCasePage = lazy(() => import("./pages/EditCasePage"));
@@ -185,6 +187,7 @@ function AppShell({ session, profile }) {
             <Route path="/cases/:caseId/edit" element={<ProtectedRoute canEdit={canEdit}><EditCasePage session={session} /></ProtectedRoute>} />
             <Route path="/customers" element={<CustomersPage canEdit={canEdit} />} />
             <Route path="/customers/new" element={<ProtectedRoute canEdit={canEdit}><CustomerFormPage /></ProtectedRoute>} />
+            <Route path="/customers/:customerId/overview" element={<CustomerSiteOverviewPage canEdit={canEdit} />} />
             <Route path="/customers/:customerId/edit" element={<ProtectedRoute canEdit={canEdit}><CustomerFormPage /></ProtectedRoute>} />
             <Route path="/training" element={<TrainingPage canEdit={canEdit} />} />
             <Route path="/training/new" element={<ProtectedRoute canEdit={canEdit}><NewTrainingPage session={session} /></ProtectedRoute>} />
@@ -195,6 +198,7 @@ function AppShell({ session, profile }) {
             <Route path="/bioplex-inventory" element={<BioplexInventoryPage canEdit={canEdit} profile={profile} />} />
             <Route path="/bioplex-inventory/new" element={<ProtectedRoute canEdit={canEdit}><BioplexInventoryFormPage /></ProtectedRoute>} />
             <Route path="/bioplex-inventory/report" element={<BioplexInventoryReportPage />} />
+            <Route path="/bioplex-inventory/lot-expiry-maintenance" element={<ProtectedRoute canEdit={profile?.role === "admin"}><BioplexLotExpiryMaintenancePage /></ProtectedRoute>} />
             <Route path="/bioplex-matching-check" element={<BioplexMatchingCheckPage profile={profile} />} />
             <Route path="/bioplex-matching-imports" element={<ProtectedRoute canEdit={profile?.role === "admin"}><BioplexMatchingImportsPage /></ProtectedRoute>} />
             <Route path="/bioplex-matching-imports/:importId" element={<ProtectedRoute canEdit={profile?.role === "admin"}><BioplexMatchingImportReviewPage /></ProtectedRoute>} />

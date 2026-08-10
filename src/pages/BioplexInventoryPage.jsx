@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   BarChart3,
+  CalendarClock,
   FilePenLine,
   Plus,
   RefreshCw,
@@ -108,47 +109,13 @@ export default function BioplexInventoryPage({ canEdit, profile }) {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-start gap-2 self-start">
-          <Link
-            to="/bioplex-inventory/report"
-            className="inline-flex h-10 items-center justify-center gap-2 self-start rounded-xl border border-slate-700 px-4 text-slate-200"
-          >
-            <BarChart3 size={17} aria-hidden="true" />
-            Reports
-          </Link>
-          <Link
-            to="/bioplex-matching-check"
-            className="inline-flex h-10 items-center justify-center gap-2 self-start rounded-xl border border-violet-700 bg-violet-950/30 px-4 text-violet-300"
-          >
-            <SearchCheck size={17} aria-hidden="true" />
-            Matching Check
-          </Link>
-          {isAdmin && (
-            <Link
-              to="/bioplex-matching-imports"
-              className="inline-flex h-10 items-center justify-center gap-2 self-start rounded-xl border border-amber-700 bg-amber-950/30 px-4 text-amber-300"
-            >
-              <Upload size={17} aria-hidden="true" />
-              Imports
-            </Link>
-          )}
-          <button
-            type="button"
-            onClick={load}
-            className="inline-flex h-10 items-center justify-center gap-2 self-start rounded-xl border border-slate-700 px-4 text-slate-300"
-          >
-            <RefreshCw size={17} aria-hidden="true" />
-            Refresh
-          </button>
-          {canEdit && (
-            <Link
-              to="/bioplex-inventory/new"
-              className="inline-flex h-10 items-center justify-center gap-2 self-start rounded-xl bg-blue-600 px-4 font-medium text-white"
-            >
-              <Plus size={18} aria-hidden="true" />
-              New count
-            </Link>
-          )}
+        <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 xl:w-[42rem] xl:grid-cols-3">
+          {canEdit && <Link to="/bioplex-inventory/new" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 font-medium text-white"><Plus size={18} aria-hidden="true"/>New Count</Link>}
+          <button type="button" onClick={load} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-700 px-4 text-slate-300"><RefreshCw size={17} aria-hidden="true"/>Refresh</button>
+          <Link to="/bioplex-inventory/report" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-700 px-4 text-slate-200"><BarChart3 size={17} aria-hidden="true"/>Reports</Link>
+          <Link to="/bioplex-matching-check" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-violet-700 bg-violet-950/30 px-4 text-violet-300"><SearchCheck size={17} aria-hidden="true"/>Matching Check</Link>
+          {isAdmin && <Link to="/bioplex-inventory/lot-expiry-maintenance" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-cyan-800 px-4 text-cyan-300"><CalendarClock size={17} aria-hidden="true"/>Lot Expiry</Link>}
+          {isAdmin && <Link to="/bioplex-matching-imports" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-amber-700 bg-amber-950/30 px-4 text-amber-300"><Upload size={17} aria-hidden="true"/>Imports</Link>}
         </div>
       </header>
 

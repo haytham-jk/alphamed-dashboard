@@ -1,12 +1,10 @@
 import { handleInvalidCapture } from "../utils/formFocus";
 import SelectInput from "../components/ui/SelectInput";
 import { useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, CalendarClock, Search } from "lucide-react";
 import {
-  correctBioplexLotExpiry,
   findBioplexMatches,
-  getBioplexLotEvents,
 } from "../services/bioplexMatching";
 import { formatBioplexDate } from "../utils/bioplexDates";
 
@@ -56,9 +54,8 @@ export default function BioplexMatchingCheckPage({ profile }) {
   const [results, setResults] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [editing, setEditing] = useState(null);
-  const [history, setHistory] = useState([]);
   const lotRef = useRef(null);
+  const navigate = useNavigate();
   const isAdmin = profile?.role === "admin";
 
   async function search(event) {
@@ -80,34 +77,9 @@ export default function BioplexMatchingCheckPage({ profile }) {
     }
   }
 
-  async function openEditor(target) {
-    try {
-      setHistory(await getBioplexLotEvents(target.id));
-      setEditing({ ...target, expiryDate: target.expiryDate || "", reason: "" });
-    } catch (historyError) {
-      setError(historyError.message || "Unable to load the expiry correction history.");
-    }
+  function openEditor(target) {
+    navigate(`/bioplex-inventory/lot-expiry-maintenance?lotId=${encodeURIComponent(target.id)}&returnTo=matching-check`);
   }
-
-  async function saveExpiry() {
-    if (!editing.reason.trim()) {
-      setError("Enter a reason for the expiry-date correction.");
-      document.querySelector("[data-expiry-reason]")?.focus();
-      return;
-    }
-    try {
-      setBusy(true);
-      setError("");
-      await correctBioplexLotExpiry(editing.id, editing.expiryDate, editing.reason);
-      setEditing(null);
-      await search();
-    } catch (saveError) {
-      setError(saveError.message || "Unable to update the expiry date.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return <div className="mx-auto max-w-5xl space-y-5"><Link to="/bioplex-inventory" className="-ml-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-slate-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"><ArrowLeft size={18} aria-hidden="true" />Back to BioPlex Management</Link>
     <header>
       <p className="text-sm text-blue-400">BioPlex</p>
@@ -160,16 +132,6 @@ export default function BioplexMatchingCheckPage({ profile }) {
       </article>)}
     </div>
 
-    {editing && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-xl rounded-2xl border border-slate-700 bg-slate-900 p-6">
-        <h2 className="text-xl font-semibold">Correct expiry date</h2>
-        <p className="mt-1 text-slate-400">{editing.label}</p>
-        <label className="mt-5 block">Expiry date<input type="date" className={`${inputClass} mt-2`} value={editing.expiryDate} onChange={(event) => setEditing((current) => ({ ...current, expiryDate: event.target.value }))}/><span className="mt-1 block text-xs text-slate-500">{formatBioplexDate(editing.expiryDate) || "No expiry date"}</span></label>
-        <label className="mt-4 block">Correction reason<textarea data-expiry-reason rows={3} className={`${inputClass} mt-2`} value={editing.reason} onChange={(event) => setEditing((current) => ({ ...current, reason: event.target.value }))}/></label>
-        {history.length > 0 && <div className="mt-4 max-h-40 overflow-auto rounded-xl border border-slate-800 p-3"><p className="text-sm font-medium">Previous corrections</p>{history.map((event) => <div key={event.id} className="mt-2 text-sm text-slate-400">{formatBioplexDate(event.previous_expiry_date) || "Blank"} → {formatBioplexDate(event.new_expiry_date) || "Blank"}: {event.reason}</div>)}</div>}
-        <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setEditing(null)} className="h-10 rounded-xl border border-slate-700 px-4">Cancel</button><button type="button" disabled={busy} onClick={saveExpiry} className="h-10 rounded-xl bg-blue-600 px-4 font-medium disabled:opacity-50">Save correction</button></div>
-      </div>
-    </div>}
   </div>;
 }
 

@@ -200,3 +200,13 @@ export async function getActiveBioplexMatchingSnapshot() {
     }),
   };
 }
+
+export async function getBioplexLotsForMaintenance() {
+  return fetchAllBioplexPages((from, to) =>
+    supabase
+      .from("bioplex_lots")
+      .select("id, assay_id, product_id, material_type, lot_number, normalized_lot_number, release_date, expiry_date, is_active, source_import_id, updated_at, bioplex_assays(assay_name), bioplex_products(product_name, product_code)")
+      .order("normalized_lot_number")
+      .range(from, to)
+  );
+}
