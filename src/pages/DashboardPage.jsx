@@ -1,4 +1,4 @@
-import { formatDateOnly } from "../utils/dateDisplay";
+import { formatDateOnly, getDateUrgency } from "../utils/dateDisplay";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -109,6 +109,32 @@ export default function DashboardPage({ canEdit }) {
   const activeCases = useMemo(
     () => cases.filter((item) => ACTIVE_CASE_STATUSES.includes(item.status)),
     [cases]
+  );
+
+  const followUpSortedActiveCases = useMemo(
+    () =>
+      activeCases
+        .map((item) => ({
+          ...item,
+          followUpUrgency: getDateUrgency(item.followUpDate),
+        }))
+        .sort((first, second) => {
+          const urgencyDifference =
+            first.followUpUrgency.rank - second.followUpUrgency.rank;
+
+          if (urgencyDifference !== 0) return urgencyDifference;
+
+          const firstFollowUp = String(first.followUpDate || "9999-12-31");
+          const secondFollowUp = String(second.followUpDate || "9999-12-31");
+          const dateDifference = firstFollowUp.localeCompare(secondFollowUp);
+
+          if (dateDifference !== 0) return dateDifference;
+
+          return String(first.title || "").localeCompare(
+            String(second.title || "")
+          );
+        }),
+    [activeCases]
   );
 
   const metrics = useMemo(
@@ -229,11 +255,11 @@ export default function DashboardPage({ canEdit }) {
           countClass="border-blue-700 bg-blue-950 text-blue-300"
         />
         <div className="space-y-2.5 bg-slate-950/35 p-4 sm:p-5">
-          {activeCases.slice(0, 10).map((item) => (
+          {followUpSortedActiveCases.slice(0, 10).map((item) => (
             <Link
               key={item.databaseId}
               to={`/cases/${item.databaseId}`}
-              className={`grid gap-3 rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-3.5 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center ${interactiveCardClass}`}
+              className={`grid gap-3 rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-3.5 sm:grid-cols-[minmax(0,1fr)_7rem_7rem_7rem] sm:items-center ${interactiveCardClass}`}
             >
               <div className="min-w-0">
                 <p className="truncate font-semibold text-slate-100">{item.title}</p>
@@ -241,10 +267,20 @@ export default function DashboardPage({ canEdit }) {
                   {item.customer}
                 </p>
               </div>
-              <span className={`${CASE_BADGE_CLASS} ${getCaseStatusClass(item.status)}`}>
+              <span
+                className={`${CASE_BADGE_CLASS} w-full justify-center text-center ${item.followUpUrgency.className}`}
+                title={
+                  item.followUpDate
+                    ? `Follow-up: ${formatDateOnly(item.followUpDate)}`
+                    : "No follow-up date recorded"
+                }
+              >
+                {item.followUpUrgency.label}
+              </span>
+              <span className={`${CASE_BADGE_CLASS} w-full justify-center text-center ${getCaseStatusClass(item.status)}`}>
                 {item.status}
               </span>
-              <span className={`${CASE_BADGE_CLASS} ${getCasePriorityClass(item.priority)}`}>
+              <span className={`${CASE_BADGE_CLASS} w-full justify-center text-center ${getCasePriorityClass(item.priority)}`}>
                 {item.priority}
               </span>
             </Link>
