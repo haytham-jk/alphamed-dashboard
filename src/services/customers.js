@@ -66,6 +66,36 @@ export async function saveCustomerWithContacts(customerId, values, { allowSimila
 }
 export async function createCustomer(values, options) { return saveCustomerWithContacts(null, values, options); }
 export async function updateCustomer(customerId, values, options) { return saveCustomerWithContacts(customerId, values, options); }
+
+export async function findSimilarCustomerContacts(customerId, contact) {
+  const { data, error } = await supabase.rpc("find_similar_customer_contacts", {
+    p_customer_id: Number(customerId),
+    p_name: String(contact.name ?? "").trim(),
+    p_email: String(contact.email ?? "").trim().toLowerCase() || null,
+    p_phone_number: String(contact.phoneNumber ?? "").trim() || null,
+  });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function addCustomerContact(
+  customerId,
+  contact,
+  { allowDuplicateOverride = false, duplicateCandidates = [] } = {}
+) {
+  const { data, error } = await supabase.rpc("add_customer_contact", {
+    p_customer_id: Number(customerId),
+    p_name: String(contact.name ?? "").trim(),
+    p_designation: String(contact.designation ?? "").trim(),
+    p_phone_number: String(contact.phoneNumber ?? "").trim() || null,
+    p_email: String(contact.email ?? "").trim().toLowerCase() || null,
+    p_allow_duplicate_override: Boolean(allowDuplicateOverride),
+    p_duplicate_candidates: duplicateCandidates,
+  });
+  if (error) throw error;
+  return Number(data);
+}
+
 export async function getCustomerSiteOverview(customerId) {
   const id = Number(customerId);
   const [customerResult, instrumentsResult, unityResult, eqasResult] = await Promise.all([
