@@ -28,6 +28,7 @@ const DESIGNATIONS = [
   "Lab Manager",
   "Lab Supervisor",
   "Lab Technician",
+  "Pathologist",
   "Quality Supervisor",
 ];
 

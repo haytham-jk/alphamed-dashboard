@@ -8,7 +8,7 @@ import { createCustomer, findSimilarCustomers, getCustomer, updateCustomer } fro
 import { deleteCustomer } from "../services/deletions";
 import { contactFingerprint } from "../utils/customerDuplicates";
 import { EMIRATES } from "../constants/locationOptions";
-const DESIGNATIONS = ["Lab Director", "Lab Manager", "Lab Supervisor", "Lab Technician", "Quality Supervisor"];
+const DESIGNATIONS = ["Lab Director", "Lab Manager", "Lab Supervisor", "Lab Technician", "Pathologist", "Quality Supervisor"];
 const inputClass = "mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2";
 const emptyContact = () => ({ key: crypto.randomUUID(), name: "", designation: "Lab Manager", phoneNumber: "", email: "" });
 const initialValues = { customerName: "", emirate: "", isActive: true, isIsoEiacAccredited: false, isoEiacAccreditationNumber: "", isCapAccredited: false, contacts: [] };
