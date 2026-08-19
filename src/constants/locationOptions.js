@@ -1,5 +1,6 @@
 export const EMIRATES = [
   "Abu Dhabi",
+  "Al Ain",
   "Dubai",
   "Sharjah",
   "Ajman",

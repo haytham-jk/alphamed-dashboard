@@ -1,7 +1,7 @@
 import { handleInvalidCapture, focusFirstInvalidField } from "../utils/formFocus";
 import SelectInput from "../components/ui/SelectInput";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Boxes,
@@ -46,6 +46,9 @@ function emptyContact() {
 
 export default function CustomerSiteOverviewPage({ canEdit }) {
   const { customerId } = useParams();
+  const location = useLocation();
+  const customersReturnTo = location.state?.customersReturnTo || "/customers";
+  const customersReturnState = { focusCustomerId: Number(customerId) };
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -210,7 +213,8 @@ export default function CustomerSiteOverviewPage({ canEdit }) {
   return (
     <div className="mx-auto max-w-7xl space-y-5">
       <Link
-        to="/customers"
+        to={customersReturnTo}
+        state={customersReturnState}
         className="inline-flex items-center gap-2 text-sm text-slate-400"
       >
         <ArrowLeft size={18} />
@@ -238,6 +242,10 @@ export default function CustomerSiteOverviewPage({ canEdit }) {
               </button>
               <Link
                 to={`/customers/${customer.id}/edit`}
+                state={{
+                  customersReturnTo,
+                  focusCustomerId: Number(customerId),
+                }}
                 className="rounded-xl border border-blue-700 px-4 py-2 text-blue-300"
               >
                 Edit customer
