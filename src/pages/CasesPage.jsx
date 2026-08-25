@@ -72,6 +72,7 @@ export default function CasesPage({ canEdit }) {
   const query = searchParams.get("q") || "";
   const status = validStatus(searchParams.get("status") || "Active");
   const escalatedOnly = searchParams.get("escalated") === "true";
+  const overdueOnly = searchParams.get("overdue") === "true";
   const sort = searchParams.get("sort") || "priority";
   const groupBy =
     searchParams.get("group") === "priority" ? "priority" : "none";
@@ -79,12 +80,14 @@ export default function CasesPage({ canEdit }) {
 
   function updateFilters(changes) {
     const next = new URLSearchParams(searchParams);
-    if ("status" in changes) next.delete("escalated");
+    if ("status" in changes) {
+      next.delete("escalated");
+      next.delete("overdue");
+    }
 
     Object.entries(changes).forEach(([key, value]) => {
       const shouldDelete =
         !value ||
-        (key === "status" && value === "All") ||
         (key === "page" && Number(value) === 1) ||
         (key === "group" && value === "none");
 
@@ -136,6 +139,11 @@ export default function CasesPage({ canEdit }) {
           ACTIVE_CASE_STATUSES.includes(record.status)) ||
         record.status === status;
 
+      const urgency = getDateUrgency(record.followUpDate);
+      const matchesOverdue =
+        !overdueOnly ||
+        (ACTIVE_CASE_STATUSES.includes(record.status) && urgency.rank === 0);
+
       const escalationTarget = String(record.escalatedTo || "").trim();
       const matchesEscalation =
         !escalatedOnly ||
@@ -143,7 +151,7 @@ export default function CasesPage({ canEdit }) {
           escalationTarget !== "" &&
           escalationTarget !== "None");
 
-      return matchesSearch && matchesStatus && matchesEscalation;
+      return matchesSearch && matchesStatus && matchesEscalation && matchesOverdue;
     });
 
     return [...result].sort((first, second) => {
@@ -177,7 +185,7 @@ export default function CasesPage({ canEdit }) {
         (priorityRank[second.priority] ?? 99)
       );
     });
-  }, [cases, escalatedOnly, query, sort, status]);
+  }, [cases, escalatedOnly, overdueOnly, query, sort, status]);
 
   const pageCount = Math.max(1, Math.ceil(filteredCases.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);

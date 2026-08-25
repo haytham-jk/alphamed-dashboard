@@ -111,6 +111,22 @@ export default function DashboardPage({ canEdit }) {
     [cases]
   );
 
+  const overdueCases = useMemo(
+    () =>
+      activeCases
+        .map((item) => ({
+          ...item,
+          followUpUrgency: getDateUrgency(item.followUpDate),
+        }))
+        .filter((item) => item.followUpUrgency.rank === 0)
+        .sort((first, second) =>
+          String(first.followUpDate || "").localeCompare(
+            String(second.followUpDate || "")
+          )
+        ),
+    [activeCases]
+  );
+
   const followUpSortedActiveCases = useMemo(
     () =>
       activeCases
@@ -140,16 +156,11 @@ export default function DashboardPage({ canEdit }) {
   const metrics = useMemo(
     () => ({
       active: activeCases.length,
-      pending: cases.filter((item) => item.status === "Pending").length,
+      overdue: overdueCases.length,
       unresolved: cases.filter((item) => item.status === "Unresolved").length,
-      escalated: activeCases.filter(
-        (item) =>
-          item.escalatedTo &&
-          item.escalatedTo.trim() !== "" &&
-          item.escalatedTo !== "None"
-      ).length,
+      escalated: cases.filter((item) => item.status === "Escalated").length,
     }),
-    [cases, activeCases]
+    [cases, activeCases, overdueCases]
   );
 
   const attentionLinearity = useMemo(
@@ -216,12 +227,12 @@ export default function DashboardPage({ canEdit }) {
           tone="bg-blue-950 text-blue-300"
         />
         <DashboardCard
-          to="/cases?status=Pending"
+          to="/cases?status=Active&overdue=true&sort=followUp"
           icon={Clock}
-          label="Pending"
-          value={metrics.pending}
-          note="Cases currently pending"
-          tone="bg-cyan-950 text-cyan-300"
+          label="Overdue"
+          value={metrics.overdue}
+          note="Active cases past follow-up"
+          tone="bg-red-950 text-red-300"
         />
         <DashboardCard
           to="/cases?status=Unresolved"
@@ -232,11 +243,11 @@ export default function DashboardPage({ canEdit }) {
           tone="bg-orange-950 text-orange-300"
         />
         <DashboardCard
-          to="/cases?escalated=true"
+          to="/cases?status=Escalated"
           icon={ShieldAlert}
           label="Escalated"
           value={metrics.escalated}
-          note="Active escalated cases"
+          note="Cases with Escalated status"
           tone="bg-red-950 text-red-300"
         />
       </section>

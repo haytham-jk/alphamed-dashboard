@@ -1,9 +1,10 @@
 import { formatDateOnly } from "../utils/dateDisplay";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ChevronDown,
   ChevronRight,
+  Copy,
   Plus,
   Search,
 } from "lucide-react";
@@ -15,12 +16,31 @@ export default function AssetsPage({ canEdit }) {
   const [view, setView] = useState("Active");
   const [expandedGroups, setExpandedGroups] = useState({});
   const [error, setError] = useState("");
+  const [copyMessage, setCopyMessage] = useState("");
+  const copyTimer = useRef(null);
 
   useEffect(() => {
     getAssets()
       .then(setAssets)
       .catch((loadError) => setError(loadError.message));
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimer.current) window.clearTimeout(copyTimer.current);
+    };
+  }, []);
+
+  async function copySerialNumber(serialNumber) {
+    try {
+      await navigator.clipboard.writeText(serialNumber);
+      setCopyMessage("Serial number copied");
+    } catch {
+      setCopyMessage("Unable to copy serial number");
+    }
+    if (copyTimer.current) window.clearTimeout(copyTimer.current);
+    copyTimer.current = window.setTimeout(() => setCopyMessage(""), 2200);
+  }
 
   const filteredAssets = useMemo(() => {
     const search = query.trim().toLowerCase();
@@ -88,6 +108,11 @@ export default function AssetsPage({ canEdit }) {
 
   return (
     <div className="space-y-5">
+      {copyMessage && (
+        <div role="status" aria-live="polite" className="fixed right-4 top-4 z-50 rounded-xl border border-blue-800 bg-blue-950 px-4 py-3 text-sm text-blue-200 shadow-xl">
+          {copyMessage}
+        </div>
+      )}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <p className="text-sm text-blue-400">
@@ -263,14 +288,27 @@ export default function AssetsPage({ canEdit }) {
                               </Link>
                             </td>
 
-                            <td className="p-0">
-                              <Link
-                                to={destination}
-                                className="block p-4"
-                              >
-                                {asset.serial_number ||
-                                  "Not recorded"}
-                              </Link>
+                            <td className="p-4">
+                              {asset.serial_number ? (
+                                <button
+                                  type="button"
+                                  onClick={() => copySerialNumber(asset.serial_number)}
+                                  aria-label={`Copy serial number ${asset.serial_number}`}
+                                  title="Copy serial number"
+                                  className="group inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-1.5 transition-colors hover:border-blue-500 hover:bg-blue-950 hover:text-blue-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                                >
+                                  <Copy
+                                    size={14}
+                                    aria-hidden="true"
+                                    className="transition-colors group-hover:text-blue-300"
+                                  />
+                                  {asset.serial_number}
+                                </button>
+                              ) : (
+                                <Link to={destination} className="block text-slate-500">
+                                  Not recorded
+                                </Link>
+                              )}
                             </td>
 
                             <td className="p-0">
