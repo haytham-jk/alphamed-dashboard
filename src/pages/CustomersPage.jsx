@@ -24,7 +24,10 @@ export default function CustomersPage({ canEdit }) {
   const query = searchParams.get("q") ?? "";
   const accreditationFilter = ACCREDITATION_FILTERS.includes(searchParams.get("accreditation")) ? searchParams.get("accreditation") : "All";
   const emirateFilter = searchParams.get("emirate") ?? "All";
-  const statusFilter = STATUS_FILTERS.includes(searchParams.get("status")) ? searchParams.get("status") : "All";
+  const statusParameter = searchParams.get("status");
+  const statusFilter = STATUS_FILTERS.includes(statusParameter)
+    ? statusParameter
+    : "Active";
 
   useEffect(() => {
     setLoading(true);
@@ -82,7 +85,7 @@ export default function CustomersPage({ canEdit }) {
 
   function updateFilter(key, value) {
     const next = new URLSearchParams(searchParams);
-    if (!value || value === "All") next.delete(key);
+    if (!value || (value === "All" && key !== "status")) next.delete(key);
     else next.set(key, value);
     setSearchParams(next, { replace: true });
   }
