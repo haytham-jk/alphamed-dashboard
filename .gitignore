@@ -12,6 +12,14 @@ dist/
 # Local Supabase and tooling state
 .supabase/
 
+# Vite and general caches
+.vite/
+node_modules/.vite/
+.cache/
+.tmp/
+temp/
+tmp/
+
 # Logs
 *.log
 npm-debug.log*
@@ -24,9 +32,11 @@ pnpm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+Desktop.ini
 
 # Test and coverage output
 coverage/
+.nyc_output/
 
 # Temporary patch scripts and phase notes
 apply-*.mjs
@@ -36,25 +46,47 @@ FLASH-MESSAGE-FIX*.md
 ESCALATED-CARD-FIX*.md
 ACTIVE-ESCALATION-FILTER.md
 
-# Backups created during local patching
+# Backups and temporary files
 *.bak
+*.backup
+*.old
+*.orig
+*.tmp
 *.phase*.bak
 *.flash-fix.bak
 *.final-phase.bak
 *.escalated-card*.bak
 *.escalation-filter.bak
 
-# Database data exports. Keep schema migrations under supabase/migrations.
+# Database data exports
+# Keep schema migrations under supabase/migrations.
 *_rows.sql
 support_cases_rows*.sql
 case_customers_rows*.sql
 instruments_rows*.sql
 linearity_records_rows*.sql
 
+# Temporary database inspection exports
+*_base64.txt
+*_base64_v2.txt
+*_permissions.txt
+*_timestamp_columns.txt
+*_timestamps_triggers.txt
+*_rls.txt
+*_rls_status.txt
+*_rpc_signatures.txt
+
+# Phase 1 local audit outputs
+phase1_*_results.txt
+phase1_source_inventory.txt
+phase1_direct_mutations.txt
+phase1_concurrency_usage.txt
+phase1_database_*_audit.txt
+
 # Local archives
-phase-*-changes.zip
-phase-*-fixed.zip
-final-phase-changes.zip
-flash-message-fix*.zip
-escalated-card-fix*.zip
-active-escalation-filter.zip
+*.zip
+
+# Generated exports at the project root
+/*.pdf
+/*.xlsx
+/*.xls

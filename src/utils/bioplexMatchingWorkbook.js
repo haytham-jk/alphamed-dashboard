@@ -18,7 +18,7 @@ function dateResult(value) {
   const raw = String(value ?? "").trim();
   if (!raw) return { value: null, raw: "", issue: "" };
 
-  const match = /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2}|\d{4})$/.exec(raw);
+  const match = /^(\d{1,2})[/-](\d{1,2})[/-](\d{2}|\d{4})$/.exec(raw);
   if (!match) return { value: null, raw, issue: "INVALID_DATE" };
 
   const month = Number(match[1]);
@@ -43,7 +43,15 @@ function dateResult(value) {
     issue: "",
   };
 }
-function text(value){if(value instanceof Date)return dateResult(value).raw;return String(value??"").replace(/[\u0000-\u001f\u007f]/g," ").replace(/\s+/g," ").trim();}
+function removeControlCharacters(value) {
+  return Array.from(String(value ?? ""))
+    .map((character) => {
+      const code = character.charCodeAt(0);
+      return code <= 31 || code === 127 ? " " : character;
+    })
+    .join("");
+}
+function text(value){if(value instanceof Date)return dateResult(value).raw;return removeControlCharacters(value).replace(/\s+/g," ").trim();}
 function upper(value){return text(value).toUpperCase();}
 export function normalizeLot(value){const normalized=upper(value);return EMPTY_MARKERS.has(normalized)?"":normalized;}
 export function dateToIso(value){return dateResult(value);}

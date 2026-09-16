@@ -1,11 +1,12 @@
 import { supabase } from "../lib/supabase";
 
-export async function getSupportCases() {
+export async function getSupportCases({ signal } = {}) {
   const { data, error } = await supabase
     .from("support_cases")
     .select(`
       id,
       case_reference,
+      updated_at,
       case_title,
       issue_description,
       source,
@@ -35,7 +36,8 @@ export async function getSupportCases() {
         )
       )
     `)
-    .order("case_created_on", { ascending: false });
+    .order("case_created_on", { ascending: false })
+    .abortSignal(signal);
 
   if (error) throw error;
 
@@ -69,6 +71,7 @@ export async function getSupportCases() {
     return {
       databaseId: row.id,
       id: row.case_reference ?? String(row.id),
+      updatedAt: row.updated_at ?? "",
       customers: linkedCustomers,
       customerNames,
       primaryCustomer:

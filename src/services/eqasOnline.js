@@ -1,4 +1,9 @@
 import { supabase } from "../lib/supabase";
+import {
+  EQAS_CONFLICT_MESSAGE,
+  expectedOperationalTimestamp,
+  operationalMutationError,
+} from "../utils/operationalConcurrency";
 
 function clean(value) {
   return String(value || "").trim();
@@ -36,7 +41,7 @@ export async function getEqasOnlineRecords() {
 export async function getEqasOnlineRecord(recordId) {
   const { data, error } = await supabase
     .from("eqas_online_records")
-    .select("id, customer_id, qcnet_id, lab_number, lab_name")
+    .select("id, customer_id, qcnet_id, lab_number, lab_name, updated_at")
     .eq("id", Number(recordId))
     .single();
   if (error) throw error;
@@ -54,11 +59,17 @@ export async function createEqasOnlineRecord(values) {
 }
 
 export async function updateEqasOnlineRecord(recordId, values) {
-  const { error } = await supabase
-    .from("eqas_online_records")
-    .update(payload(values))
-    .eq("id", Number(recordId));
-  if (error) throw friendlyError(error);
+  const { error } = await supabase.rpc("update_eqas_online_record_atomic", {
+    p_record_id: Number(recordId),
+    p_values: payload(values),
+    p_expected_updated_at: expectedOperationalTimestamp(
+      values.expectedUpdatedAt,
+      "EQAS Online record"
+    ),
+  });
+  if (error) {
+    throw friendlyError(operationalMutationError(error, EQAS_CONFLICT_MESSAGE));
+  }
 }
 
 export async function deleteEqasOnlineRecord(recordId) {

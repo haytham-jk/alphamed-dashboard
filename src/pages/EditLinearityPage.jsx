@@ -6,7 +6,7 @@ import { ArrowLeft, Trash2 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import DatePickerInput from "../components/ui/DatePickerInput";
 import { getCustomerOptions } from "../services/customers";
-import { getInstrumentsForCustomer } from "../services/assets";
+import useCustomerInstruments from "../hooks/useCustomerInstruments";
 import {
   getLinearityRecord,
   updateLinearityRecord,
@@ -20,13 +20,14 @@ export default function EditLinearityPage() {
   const { linearityId } = useParams();
   const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
-  const [instruments, setInstruments] = useState([]);
   const [values, setValues] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [dirty, setDirty] = useState(false);
   const { confirmDiscard } = useUnsavedChanges(dirty);
+  const { instruments, loadingInstruments, instrumentError, retryInstruments } =
+    useCustomerInstruments(values?.customerId);
 
   useEffect(() => {
     Promise.all([
@@ -35,12 +36,8 @@ export default function EditLinearityPage() {
     ])
       .then(async ([customerOptions, record]) => {
         setCustomers(customerOptions);
-        const instrumentOptions = record.customer_id
-          ? await getInstrumentsForCustomer(record.customer_id)
-          : [];
-        setInstruments(instrumentOptions);
         setValues({
-          customerId: String(record.customer_id || ""),
+          expectedUpdatedAt: record.updated_at || "", customerId: String(record.customer_id || ""),
           instrumentId: String(record.instrument_id || ""),
           instrumentName:
             record.instruments?.instrument_name ||
@@ -68,25 +65,16 @@ export default function EditLinearityPage() {
     setValues((current) => ({ ...current, [field]: value }));
   }
 
-  async function changeCustomer(customerId) {
-    try {
-      setDirty(true);
-      setError("");
-      setInstruments(
-        customerId ? await getInstrumentsForCustomer(customerId) : []
-      );
-      setValues((current) => ({
-        ...current,
-        customerId,
-        instrumentId: "",
-        instrumentName: "",
-        serialNumber: "",
-      }));
-    } catch (loadError) {
-      setError(
-        loadError?.message || "Unable to load customer instruments."
-      );
-    }
+  function changeCustomer(customerId) {
+    setDirty(true);
+    setError("");
+    setValues((current) => ({
+      ...current,
+      customerId,
+      instrumentId: "",
+      instrumentName: "",
+      serialNumber: "",
+    }));
   }
 
   function changeInstrument(instrumentId) {
@@ -214,10 +202,10 @@ export default function EditLinearityPage() {
             required
             className={inputClass}
             value={values.instrumentId}
-            disabled={!values.customerId}
+            disabled={!values.customerId || loadingInstruments}
             onChange={(event) => changeInstrument(event.target.value)}
           >
-            <option value="">Select instrument</option>
+            <option value="">{loadingInstruments ? "Loading instruments..." : "Select instrument"}</option>
             {instruments.map((instrument) => (
               <option key={instrument.id} value={instrument.id}>
                 {instrument.instrument_name}
@@ -230,7 +218,12 @@ export default function EditLinearityPage() {
           <span className="mt-1 block text-xs text-slate-500">
             Instruments must first be assigned to this customer in Assets.
           </span>
-        </label>
+                  {instrumentError && (
+            <button type="button" onClick={retryInstruments} className="mt-1 block text-xs text-red-300 underline">
+              {instrumentError} Retry
+            </button>
+          )}
+</label>
 
         {values.instrumentId && (
           <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 md:col-span-2">

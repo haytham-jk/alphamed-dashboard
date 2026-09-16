@@ -21,7 +21,7 @@ export default function EditEqasOnlinePage() {
   const [dirty, setDirty] = useState(false);
   const { confirmDiscard } = useUnsavedChanges(dirty);
 
-  useEffect(() => { Promise.all([getCustomerOptions(), getEqasOnlineRecord(recordId)]).then(([customerOptions, record]) => { setCustomers(customerOptions); setValues({ customerId: String(record.customer_id), labName: record.lab_name || "", qcnetId: record.qcnet_id || "", labNumber: record.lab_number || "" }); }).catch((loadError) => setError(loadError?.message || "Unable to load EQAS record.")).finally(() => setLoading(false)); }, [recordId]);
+  useEffect(() => { Promise.all([getCustomerOptions(), getEqasOnlineRecord(recordId)]).then(([customerOptions, record]) => { setCustomers(customerOptions); setValues({ expectedUpdatedAt: record.updated_at || "", customerId: String(record.customer_id), labName: record.lab_name || "", qcnetId: record.qcnet_id || "", labNumber: record.lab_number || "" }); }).catch((loadError) => setError(loadError?.message || "Unable to load EQAS record.")).finally(() => setLoading(false)); }, [recordId]);
 
   function patch(field, value) { setDirty(true); setValues((current) => ({ ...current, [field]: value })); }
 

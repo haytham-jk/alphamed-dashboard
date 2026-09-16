@@ -1,7 +1,13 @@
 import { supabase } from "../lib/supabase";
+import { normalizeCustomerContact } from "../utils/customerDuplicates";
+import {
+  customerMutationError,
+  expectedCustomerTimestamp,
+} from "../utils/customerConcurrency";
 const customerSelection = `
   id,
   customer_name,
+  updated_at,
   emirate,
   is_active,
   is_iso_eiac_accredited,
@@ -17,8 +23,8 @@ const customerSelection = `
     display_order
   )
 `;
-export async function getCustomerOptions() {
-  const { data, error } = await supabase.from("customers").select("id, customer_name, emirate, is_active").eq("is_active", true).order("customer_name");
+export async function getCustomerOptions({ signal } = {}) {
+  const { data, error } = await supabase.from("customers").select("id, customer_name, emirate, is_active").eq("is_active", true).order("customer_name").abortSignal(signal);
   if (error) throw error;
   return (data ?? []).map((row) => ({ id: row.id, name: row.customer_name, emirate: row.emirate ?? "Unknown" }));
 }
@@ -42,13 +48,16 @@ export async function findSimilarCustomers(customerName, emirate, excludeCustome
   return data ?? [];
 }
 export async function saveCustomerWithContacts(customerId, values, { allowSimilarOverride = false, similarCandidates = [] } = {}) {
-  const contacts = (values.contacts ?? []).map((contact, index) => ({
-    name: String(contact.name ?? "").trim(),
-    designation: contact.designation,
-    phoneNumber: String(contact.phoneNumber ?? "").trim() || null,
-    email: String(contact.email ?? "").trim().toLowerCase() || null,
-    displayOrder: index,
-  }));
+  const contacts = (values.contacts ?? []).map((contact, index) => {
+    const normalized = normalizeCustomerContact(contact);
+    return {
+      name: normalized.name,
+      designation: normalized.designation,
+      phoneNumber: normalized.phoneNumber || null,
+      email: normalized.email || null,
+      displayOrder: index,
+    };
+  });
   const { data, error } = await supabase.rpc("save_customer_with_contacts", {
     p_customer_id: customerId ? Number(customerId) : null,
     p_customer_name: values.customerName.trim(),
@@ -60,8 +69,9 @@ export async function saveCustomerWithContacts(customerId, values, { allowSimila
     p_is_cap_accredited: Boolean(values.isCapAccredited),
     p_allow_similar_override: Boolean(allowSimilarOverride),
     p_similar_candidates: similarCandidates,
+    p_expected_updated_at: expectedCustomerTimestamp(customerId, values.expectedUpdatedAt),
   });
-  if (error) throw error;
+  if (error) throw customerMutationError(error);
   return { id: Number(data) };
 }
 export async function createCustomer(values, options) { return saveCustomerWithContacts(null, values, options); }

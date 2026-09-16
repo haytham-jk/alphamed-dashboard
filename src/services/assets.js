@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabase";
+import { assetMutationError, expectedUpdateTimestamp } from "../utils/assetUnityConcurrency";
 
 const assetSelection = `
   id,
@@ -8,6 +9,7 @@ const assetSelection = `
   installation_date,
   is_active,
   notes,
+  updated_at,
   customers (
     id,
     customer_name,
@@ -15,35 +17,38 @@ const assetSelection = `
   )
 `;
 
-export async function getAssets() {
+export async function getAssets({ signal } = {}) {
   const { data, error } = await supabase
     .from("instruments")
     .select(assetSelection)
     .order("instrument_name")
-    .order("serial_number");
+    .order("serial_number")
+    .abortSignal(signal);
 
   if (error) throw error;
   return data ?? [];
 }
 
-export async function getAsset(assetId) {
+export async function getAsset(assetId, { signal } = {}) {
   const { data, error } = await supabase
     .from("instruments")
     .select(assetSelection)
     .eq("id", Number(assetId))
+    .abortSignal(signal)
     .single();
 
   if (error) throw error;
   return data;
 }
 
-export async function getInstrumentsForCustomer(customerId) {
+export async function getInstrumentsForCustomer(customerId, { signal } = {}) {
   const { data, error } = await supabase
     .from("instruments")
     .select("id, instrument_name, serial_number, installation_date")
     .eq("customer_id", Number(customerId))
     .eq("is_active", true)
-    .order("instrument_name");
+    .order("instrument_name")
+    .abortSignal(signal);
 
   if (error) throw error;
   return data ?? [];
@@ -81,11 +86,10 @@ export async function updateAsset(assetId, values) {
   if (!values.instrumentName.trim()) {
     throw new Error("An instrument type is required.");
   }
-
-  const { error } = await supabase
-    .from("instruments")
-    .update(assetPayload(values))
-    .eq("id", Number(assetId));
-
-  if (error) throw error;
+  const { error } = await supabase.rpc("update_asset_atomic", {
+    p_asset_id: Number(assetId),
+    p_values: assetPayload(values),
+    p_expected_updated_at: expectedUpdateTimestamp(values.expectedUpdatedAt, "asset"),
+  });
+  if (error) throw assetMutationError(error);
 }

@@ -9,7 +9,7 @@ import {
   useParams,
 } from "react-router-dom";
 import { getCustomerOptions } from "../services/customers";
-import { getInstrumentsForCustomer } from "../services/assets";
+import useCustomerInstruments from "../hooks/useCustomerInstruments";
 import {
   getTrainingRecord,
   updateTrainingRecord,
@@ -18,16 +18,17 @@ import {
 const inputClass =
   "mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 outline-none";
 
-export default function EditTrainingPage({ session }) {
+export default function EditTrainingPage() {
   const { trainingId } = useParams();
   const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
-  const [instruments, setInstruments] = useState([]);
   const [values, setValues] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [dirty, setDirty] = useState(false);
   const { confirmDiscard } = useUnsavedChanges(dirty);
+  const { instruments, loadingInstruments, instrumentError, retryInstruments } =
+    useCustomerInstruments(values?.customerId);
 
   useEffect(() => {
     Promise.all([
@@ -37,15 +38,8 @@ export default function EditTrainingPage({ session }) {
       .then(async ([customerOptions, record]) => {
         setCustomers(customerOptions);
 
-        const instrumentOptions = record.customer_id
-          ? await getInstrumentsForCustomer(
-              record.customer_id
-            )
-          : [];
-
-        setInstruments(instrumentOptions);
         setValues({
-          title: record.title || "",
+          expectedUpdatedAt: record.updated_at || "", title: record.title || "",
           customerId: String(record.customer_id || ""),
           instrumentId: String(record.instrument_id || ""),
           instrumentName:
@@ -74,14 +68,9 @@ export default function EditTrainingPage({ session }) {
     }));
   }
 
-  async function changeCustomer(customerId) {
+  function changeCustomer(customerId) {
     setDirty(true);
-    patch("customerId", customerId);
-    setInstruments(
-      customerId
-        ? await getInstrumentsForCustomer(customerId)
-        : []
-    );
+    setError("");
     setValues((current) => ({
       ...current,
       customerId,
@@ -110,11 +99,7 @@ export default function EditTrainingPage({ session }) {
 
     try {
       setSaving(true);
-      await updateTrainingRecord(
-        trainingId,
-        values,
-        session.user.id
-      );
+      await updateTrainingRecord(trainingId, values);
       setDirty(false);
       navigate("/training", { state: { message: "Training record saved successfully." } });
     } catch (saveError) {
@@ -194,11 +179,12 @@ export default function EditTrainingPage({ session }) {
           <SelectInput
             className={inputClass}
             value={values.instrumentId}
+            disabled={!values.customerId || loadingInstruments}
             onChange={(event) =>
               changeInstrument(event.target.value)
             }
           >
-            <option value="">Select instrument</option>
+            <option value="">{loadingInstruments ? "Loading instruments..." : "Select instrument"}</option>
             {instruments.map((instrument) => (
               <option
                 key={instrument.id}
@@ -208,7 +194,12 @@ export default function EditTrainingPage({ session }) {
               </option>
             ))}
           </SelectInput>
-        </label>
+                  {instrumentError && (
+            <button type="button" onClick={retryInstruments} className="mt-1 block text-xs text-red-300 underline">
+              {instrumentError} Retry
+            </button>
+          )}
+</label>
 
         <label>
           Instrument model

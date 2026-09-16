@@ -1,7 +1,13 @@
 import { supabase } from "../lib/supabase";
+import {
+  TRAINING_CONFLICT_MESSAGE,
+  expectedOperationalTimestamp,
+  operationalMutationError,
+} from "../utils/operationalConcurrency";
 
 const trainingSelection = `
   id,
+  updated_at,
   customer_id,
   instrument_id,
   title,
@@ -22,21 +28,23 @@ const trainingSelection = `
   )
 `;
 
-export async function getTrainingRecords() {
+export async function getTrainingRecords({ signal } = {}) {
   const { data, error } = await supabase
     .from("training_records")
     .select(trainingSelection)
-    .order("training_date", { ascending: false });
+    .order("training_date", { ascending: false })
+    .abortSignal(signal);
 
   if (error) throw error;
   return data ?? [];
 }
 
-export async function getTrainingRecord(recordId) {
+export async function getTrainingRecord(recordId, { signal } = {}) {
   const { data, error } = await supabase
     .from("training_records")
     .select(trainingSelection)
     .eq("id", Number(recordId))
+    .abortSignal(signal)
     .single();
 
   if (error) throw error;
@@ -76,10 +84,13 @@ export async function createTrainingRecord(values, userId) {
 }
 
 export async function updateTrainingRecord(recordId, values) {
-  const { error } = await supabase
-    .from("training_records")
-    .update(trainingPayload(values))
-    .eq("id", Number(recordId));
-
-  if (error) throw error;
+  const { error } = await supabase.rpc("update_training_record_atomic", {
+    p_record_id: Number(recordId),
+    p_values: trainingPayload(values),
+    p_expected_updated_at: expectedOperationalTimestamp(
+      values.expectedUpdatedAt,
+      "training record"
+    ),
+  });
+  if (error) throw operationalMutationError(error, TRAINING_CONFLICT_MESSAGE);
 }

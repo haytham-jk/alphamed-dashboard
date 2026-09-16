@@ -1,0 +1,11 @@
+import test from "node:test"; import assert from "node:assert/strict";
+import { createEmptyCaseValues, CASE_STATUSES } from "../src/constants/caseOptions.js";
+import { normalizeCaseCustomers, normalizeCaseFormValues, normalizeCaseSources } from "../src/utils/caseFormHelpers.js";
+import { CASE_PROGRESS_BY_STATUS, getCaseProgress } from "../src/utils/caseProgress.js";
+import { validateCase } from "../src/utils/caseValidation.js";
+const valid=()=>({...createEmptyCaseValues(),title:" A ",description:" B ",customerIds:[7],primaryCustomerId:"7"});
+test("case customer normalization preserves one customer and fallback",()=>{assert.deepEqual(normalizeCaseCustomers(valid()),{customerIds:["7"],primaryCustomerId:"7"}); assert.deepEqual(normalizeCaseCustomers({...valid(),customerIds:[7,"7",8],primaryCustomerId:99}),{customerIds:["7","8"],primaryCustomerId:"7"}); assert.deepEqual(normalizeCaseCustomers({...valid(),internalCase:true}),{customerIds:[],primaryCustomerId:""});});
+test("case normalization derives progress and clears non-terminal resolution",()=>{const x=normalizeCaseFormValues({...valid(),status:"In Progress",progress:99,resolvedDate:"2026-01-01",resolutionSummary:" done ",source:[" EQAS ","EQAS",""]}); assert.equal(x.progress,50); assert.equal(x.resolvedDate,""); assert.equal(x.resolutionSummary,""); assert.deepEqual(x.source,["EQAS"]);});
+test("all shared statuses have authoritative progress",()=>{for(const status of CASE_STATUSES) assert.equal(getCaseProgress(status),CASE_PROGRESS_BY_STATUS[status]);});
+test("case validation accepts one customer and enforces terminal fields",()=>{assert.deepEqual(validateCase(valid()),{}); const errors=validateCase({...valid(),status:"Resolved",resolvedDate:"",resolutionSummary:""}); assert.ok(errors.resolvedDate); assert.ok(errors.resolutionSummary); assert.equal(validateCase({...valid(),internalCase:true,customerIds:[],primaryCustomerId:""}).customerIds,undefined);});
+test("source normalizer removes blanks and duplicates in order",()=>assert.deepEqual(normalizeCaseSources([" EQAS ","","EQAS","BioPlex"]),["EQAS","BioPlex"]));

@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabase";
+import { expectedUpdateTimestamp, unityMutationError } from "../utils/assetUnityConcurrency";
 
 const overviewColumns = `
   id, customer_id, customer_name, installation_name, primary_id,
@@ -103,11 +104,12 @@ export async function createUnityRtInstallation(values) {
 }
 
 export async function updateUnityRtInstallation(id, values) {
-  const { error } = await supabase
-    .from("unity_rt_installations")
-    .update(payload(values))
-    .eq("id", Number(id));
-  if (error) throw friendlyError(error);
+  const { error } = await supabase.rpc("update_unity_rt_installation_atomic", {
+    p_installation_id: Number(id),
+    p_values: payload(values),
+    p_expected_updated_at: expectedUpdateTimestamp(values.expectedUpdatedAt, "Unity Real Time installation"),
+  });
+  if (error) throw friendlyError(unityMutationError(error));
 }
 
 export async function deleteUnityRtInstallation(id) {

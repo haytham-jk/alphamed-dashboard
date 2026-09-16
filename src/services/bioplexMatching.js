@@ -1,7 +1,11 @@
 import { supabase } from "../lib/supabase";
+import {
+  bioplexImportConflictError,
+  expectedImportVersion,
+} from "../utils/bioplexImportConcurrency";
 
-const IMPORT_COLUMNS = "id, original_filename, file_sha256, import_mode, status, workbook_sheet_count, total_row_count, valid_row_count, warning_row_count, conflict_row_count, invalid_row_count, excluded_row_count, notes, created_by, created_at, reviewed_by, reviewed_at, committed_by, committed_at, rolled_back_by, rolled_back_at, rollback_reason, review_only, duplicate_of_import_id, base_committed_at";
-const ROW_COLUMNS = "id, import_id, sheet_name, source_row_number, section_type, assay_name_raw, assay_name_normalized, material_type, cc_code_raw, product_code_raw, lot_number_raw, lot_number_normalized, release_date_raw, release_date, expiry_date_raw, expiry_date, related_lot_raw, related_lot_normalized, related_material_type, source_values, review_status, proposed_action, issue_codes, review_message, resolution_notes, resolved_by, resolved_at";
+const IMPORT_COLUMNS = "id, original_filename, file_sha256, import_mode, status, workbook_sheet_count, total_row_count, valid_row_count, warning_row_count, conflict_row_count, invalid_row_count, excluded_row_count, notes, created_by, created_at, reviewed_by, reviewed_at, committed_by, committed_at, rolled_back_by, rolled_back_at, rollback_reason, review_only, duplicate_of_import_id, base_committed_at, review_version";
+const ROW_COLUMNS = "id, import_id, sheet_name, source_row_number, section_type, assay_name_raw, assay_name_normalized, material_type, cc_code_raw, product_code_raw, lot_number_raw, lot_number_normalized, release_date_raw, release_date, expiry_date_raw, expiry_date, related_lot_raw, related_lot_normalized, related_material_type, source_values, review_status, proposed_action, issue_codes, review_message, resolution_notes, resolved_by, resolved_at, updated_at";
 
 async function sha256(file) {
   const digest=await crypto.subtle.digest("SHA-256",await file.arrayBuffer());
@@ -53,7 +57,27 @@ export async function getBioplexImportRows(importId) {
   }
   return allRows;
 }
-export async function updateBioplexImportRow(rowId,changes){const allowed={assay_name_raw:changes.assayName,assay_name_normalized:String(changes.assayName??"").trim().toUpperCase(),lot_number_raw:changes.lotNumber,lot_number_normalized:String(changes.lotNumber??"").trim().toUpperCase(),release_date:changes.releaseDate||null,expiry_date:changes.expiryDate||null,related_lot_raw:changes.relatedLot||null,related_lot_normalized:String(changes.relatedLot??"").trim().toUpperCase()||null,review_status:changes.reviewStatus,proposed_action:changes.proposedAction,resolution_notes:changes.resolutionNotes||null,resolved_at:new Date().toISOString()};const {error}=await supabase.from("bioplex_matching_import_rows").update(allowed).eq("id",Number(rowId));if(error)throw error;}
+export async function updateBioplexImportRow(importId, importVersion, row, changes) {
+  const { data, error } = await supabase.rpc("update_bioplex_import_row_atomic", {
+    p_import_id: Number(importId),
+    p_expected_import_version: expectedImportVersion(importVersion),
+    p_row_id: Number(row.id),
+    p_expected_row_updated_at: row.updated_at,
+    p_changes: {
+      assayName: changes.assayName,
+      lotNumber: changes.lotNumber,
+      releaseDate: changes.releaseDate || null,
+      expiryDate: changes.expiryDate || null,
+      relatedLot: changes.relatedLot || null,
+      reviewStatus: changes.reviewStatus,
+      proposedAction: changes.proposedAction,
+      resolutionNotes: changes.resolutionNotes || null,
+    },
+  });
+  if (error) throw bioplexImportConflictError(error);
+  return Number(data);
+}
+
 export async function prepareBioplexImport(importId) {
   const { data, error } = await supabase.rpc("prepare_bioplex_matching_import", {
     p_import_id: Number(importId),
@@ -73,13 +97,13 @@ export async function getBioplexImport(importId) {
 }
 
 export async function refreshBioplexImport(importId){const {data,error}=await supabase.rpc("refresh_bioplex_import_counts",{p_import_id:Number(importId)});if(error)throw error;return Number(data);}
-export async function commitBioplexImport(importId){
+export async function commitBioplexImport(importId, importVersion){
   const record = await getBioplexImport(importId);
   if (record.review_only) {
     throw new Error(`This is a review-only copy of committed import ${record.duplicate_of_import_id}. It cannot be committed.`);
   }
-  const {data,error}=await supabase.rpc("commit_bioplex_matching_import",{p_import_id:Number(importId)});
-  if(error)throw error;
+  const {data,error}=await supabase.rpc("commit_bioplex_matching_import",{p_import_id:Number(importId),p_expected_review_version:expectedImportVersion(importVersion)});
+  if(error)throw bioplexImportConflictError(error);
   return Number(data);
 }
 export async function rollbackBioplexImport(importId,reason){const {data,error}=await supabase.rpc("rollback_bioplex_matching_import",{p_import_id:Number(importId),p_reason:String(reason??"")});if(error)throw error;return Number(data);}
@@ -107,20 +131,16 @@ export async function findBioplexMatches(lotNumber,materialType="",includeInacti
   return output;
 }
 
-export async function bulkUpdateBioplexImportRows(rowIds, changes) {
-  const ids = [...new Set((rowIds ?? []).map(Number).filter(Number.isFinite))];
-  if (!ids.length) throw new Error("Select at least one import row.");
-  const payload = {};
-  if (changes.reviewStatus) payload.review_status = changes.reviewStatus;
-  if (changes.proposedAction) payload.proposed_action = changes.proposedAction;
-  if (changes.resolutionNotes !== undefined) payload.resolution_notes = changes.resolutionNotes || null;
-  payload.resolved_at = new Date().toISOString();
-  const { error } = await supabase
-    .from("bioplex_matching_import_rows")
-    .update(payload)
-    .in("id", ids);
-  if (error) throw error;
-  return ids;
+export async function bulkUpdateBioplexImportRows(importId, importVersion, rows, changes) {
+  if (!rows?.length) throw new Error("Select at least one import row.");
+  const { data, error } = await supabase.rpc("bulk_update_bioplex_import_rows_atomic", {
+    p_import_id: Number(importId),
+    p_expected_import_version: expectedImportVersion(importVersion),
+    p_rows: rows.map((row) => ({ id: row.id, updatedAt: row.updated_at })),
+    p_changes: changes,
+  });
+  if (error) throw bioplexImportConflictError(error);
+  return Number(data);
 }
 
 export async function getBioplexImportBlockingRows(importId) {

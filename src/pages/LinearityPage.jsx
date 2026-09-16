@@ -1,9 +1,11 @@
 import { formatDateOnly } from "../utils/dateDisplay";
 import SelectInput from "../components/ui/SelectInput";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Search } from "lucide-react";
 import { getLinearityRecords } from "../services/linearity";
+import useAsyncResource from "../hooks/useAsyncResource";
+import { ErrorState, LoadingState } from "../components/ui/AsyncState";
 import {
   calculateDaysRemaining,
   calculateNextDueDate,
@@ -25,18 +27,12 @@ const dueStatusStyles = {
 };
 
 export default function LinearityPage({ canEdit }) {
-  const [records, setRecords] = useState([]);
   const [query, setQuery] = useState("");
   const [dueFilter, setDueFilter] = useState("All");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    getLinearityRecords()
-      .then(setRecords)
-      .catch((loadError) => setError(loadError.message))
-      .finally(() => setLoading(false));
-  }, []);
+  const loader = useCallback(({ signal }) => getLinearityRecords({ signal }), []);
+  const { data: records, loading, refreshing, error, retry } = useAsyncResource(
+    loader, [loader], { initialData: [], fallbackError: "Unable to load linearity records." }
+  );
 
   const rows = useMemo(() => {
     return records
@@ -108,13 +104,8 @@ export default function LinearityPage({ canEdit }) {
     });
   }, [rows, query, dueFilter]);
 
-  if (loading) {
-    return (
-      <div className="py-16 text-center text-slate-400">
-        Loading linearity records...
-      </div>
-    );
-  }
+  if (loading) return <LoadingState message="Loading linearity records..." />;
+  if (!records && error) return <ErrorState message={error} onRetry={retry} retrying={refreshing} />;
 
   return (
     <div className="space-y-5">
@@ -169,7 +160,7 @@ export default function LinearityPage({ canEdit }) {
         Showing {filteredRows.length} of {rows.length} records
       </p>
 
-      {error && <div className="text-red-300">{error}</div>}
+      {error && <ErrorState message={error} onRetry={retry} retrying={refreshing} />}
 
       <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900 shadow-sm">
         <table className="w-full min-w-[1150px] text-sm">

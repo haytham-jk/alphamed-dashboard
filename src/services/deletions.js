@@ -16,6 +16,14 @@ export async function deleteCustomer(customerId) {
     .delete()
     .eq("id", Number(customerId));
 
+  if (error?.code === "23503") {
+    throw new Error(
+      "This customer cannot be deleted because it has linked records. Disable the customer instead, or reassign the linked records before deleting it."
+    );
+  }
+  if (error?.code === "42501") {
+    throw new Error("You do not have permission to delete this customer.");
+  }
   if (error) throw error;
 }
 

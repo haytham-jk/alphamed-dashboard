@@ -1,40 +1,7 @@
 import { supabase } from "../lib/supabase";
-
-function normalizeCaseCustomers(values) {
-  if (values.internalCase) {
-    return {
-      customerIds: [],
-      primaryCustomerId: "",
-    };
-  }
-
-  const customerIds = [
-    ...new Set(
-      (values.customerIds || [])
-        .map((customerId) =>
-          customerId === null || customerId === undefined
-            ? ""
-            : String(customerId)
-        )
-        .filter(Boolean)
-    ),
-  ];
-
-  const requestedPrimaryId =
-    values.primaryCustomerId === null ||
-    values.primaryCustomerId === undefined
-      ? ""
-      : String(values.primaryCustomerId);
-
-  const primaryCustomerId = customerIds.includes(requestedPrimaryId)
-    ? requestedPrimaryId
-    : customerIds[0] || "";
-
-  return {
-    customerIds,
-    primaryCustomerId,
-  };
-}
+import { normalizeCaseCustomers, normalizeCaseSources } from "../utils/caseFormHelpers";
+import { getCaseProgress } from "../utils/caseProgress";
+import { caseConcurrencyError, expectedCaseTimestamp } from "../utils/caseConcurrency";
 
 function normalizeRpcValues(values) {
   const customers = normalizeCaseCustomers(values);
@@ -42,8 +9,8 @@ function normalizeRpcValues(values) {
     values: {
       ...values,
       ...customers,
-      source: [...new Set(values.source || [])],
-      progress: Number(values.progress) || 0,
+      source: normalizeCaseSources(values.source),
+      progress: getCaseProgress(values.status),
     },
     customerIds: customers.customerIds.map(Number),
     primaryCustomerId: customers.primaryCustomerId
@@ -53,6 +20,8 @@ function normalizeRpcValues(values) {
 }
 
 function friendlyMutationError(error) {
+  const concurrencyError = caseConcurrencyError(error);
+  if (concurrencyError !== error) return concurrencyError;
   if (error?.code === "22023" || error?.code === "23514") {
     return new Error(error.message || "Check the case details and try again.");
   }
@@ -88,6 +57,7 @@ export async function updateSupportCase(caseId, values) {
     p_values: normalized.values,
     p_customer_ids: normalized.customerIds,
     p_primary_customer_id: normalized.primaryCustomerId,
+    p_expected_updated_at: expectedCaseTimestamp(values.expectedUpdatedAt),
   });
 
   if (error) throw friendlyMutationError(error);
@@ -112,6 +82,7 @@ export async function getSupportCaseForEdit(caseId) {
     .select(`
       id,
       case_reference,
+      updated_at,
       case_title,
       issue_description,
       source,

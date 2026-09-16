@@ -6,7 +6,7 @@ import { createEmptyCaseValues } from "../constants/caseOptions";
 import { createSupportCase } from "../services/caseMutations";
 import { getCustomerOptions } from "../services/customers";
 
-export default function NewCasePage({ session }) {
+export default function NewCasePage() {
   const navigate = useNavigate();
   const initialValues = useMemo(
     () => createEmptyCaseValues(),
@@ -28,10 +28,7 @@ export default function NewCasePage({ session }) {
   }
 
   async function handleSubmit(values) {
-    const created = await createSupportCase(
-      values,
-      session.user.id
-    );
+    const created = await createSupportCase(values);
     setDirty(false);
       navigate(`/cases/${created.id}`, { state: { message: "Case saved successfully." } });
   }

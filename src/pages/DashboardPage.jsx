@@ -1,5 +1,5 @@
 import { formatDateOnly, getDateUrgency } from "../utils/dateDisplay";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   Activity,
@@ -13,6 +13,8 @@ import {
 import { getSupportCases } from "../services/cases";
 import { getLinearityRecords } from "../services/linearity";
 import { ACTIVE_CASE_STATUSES } from "../constants/caseOptions";
+import useAsyncResource from "../hooks/useAsyncResource";
+import { ErrorState, LoadingState } from "../components/ui/AsyncState";
 import {
   CASE_BADGE_CLASS,
   getCasePriorityClass,
@@ -93,18 +95,19 @@ function QuickViewHeader({
 }
 
 export default function DashboardPage({ canEdit }) {
-  const [cases, setCases] = useState([]);
-  const [linearityRecords, setLinearityRecords] = useState([]);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    Promise.all([getSupportCases(), getLinearityRecords()])
-      .then(([caseData, linearityData]) => {
-        setCases(caseData);
-        setLinearityRecords(linearityData);
-      })
-      .catch((loadError) => setError(loadError.message));
+  const loadDashboard = useCallback(async ({ signal }) => {
+    const [cases, linearityRecords] = await Promise.all([
+      getSupportCases({ signal }),
+      getLinearityRecords({ signal }),
+    ]);
+    return { cases, linearityRecords };
   }, []);
+  const { data, loading, refreshing, error, retry } = useAsyncResource(
+    loadDashboard,
+    [loadDashboard],
+    { fallbackError: "Unable to load Dashboard data." }
+  );
+  const { cases = [], linearityRecords = [] } = data ?? {};
 
   const activeCases = useMemo(
     () => cases.filter((item) => ACTIVE_CASE_STATUSES.includes(item.status)),
@@ -188,6 +191,9 @@ export default function DashboardPage({ canEdit }) {
     [linearityRecords]
   );
 
+  if (loading) return <LoadingState message="Loading Dashboard..." />;
+  if (!data && error) return <ErrorState message={error} onRetry={retry} retrying={refreshing} />;
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -208,14 +214,7 @@ export default function DashboardPage({ canEdit }) {
         )}
       </header>
 
-      {error && (
-        <div
-          className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-300"
-          role="alert"
-        >
-          {error}
-        </div>
-      )}
+      {error && <ErrorState message={error} onRetry={retry} retrying={refreshing} />}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <DashboardCard

@@ -1,3 +1,4 @@
+import { getLocalDateOnly } from "../utils/dates.js";
 export const CASE_STATUSES = [
   "New",
   "Pending",
@@ -52,7 +53,7 @@ export function createEmptyCaseValues() {
     relatedIssues: "",
     requestType: "Support Request",
     progress: 0,
-    caseCreatedOn: new Date().toISOString().slice(0, 10),
+    caseCreatedOn: getLocalDateOnly(),
     nextAction: "",
     waitingOn: "",
     followUpDate: "",

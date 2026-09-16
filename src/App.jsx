@@ -182,16 +182,16 @@ function AppShell({ session, profile }) {
           <Routes>
             <Route path="/" element={<DashboardPage canEdit={canEdit} />} />
             <Route path="/cases" element={<CasesPage canEdit={canEdit} />} />
-            <Route path="/cases/new" element={<ProtectedRoute canEdit={canEdit}><NewCasePage session={session} /></ProtectedRoute>} />
+            <Route path="/cases/new" element={<ProtectedRoute canEdit={canEdit}><NewCasePage /></ProtectedRoute>} />
             <Route path="/cases/:caseId" element={<CaseDetailsPage canEdit={canEdit} />} />
-            <Route path="/cases/:caseId/edit" element={<ProtectedRoute canEdit={canEdit}><EditCasePage session={session} /></ProtectedRoute>} />
+            <Route path="/cases/:caseId/edit" element={<ProtectedRoute canEdit={canEdit}><EditCasePage /></ProtectedRoute>} />
             <Route path="/customers" element={<CustomersPage canEdit={canEdit} />} />
             <Route path="/customers/new" element={<ProtectedRoute canEdit={canEdit}><CustomerFormPage /></ProtectedRoute>} />
             <Route path="/customers/:customerId/overview" element={<CustomerSiteOverviewPage canEdit={canEdit} />} />
             <Route path="/customers/:customerId/edit" element={<ProtectedRoute canEdit={canEdit}><CustomerFormPage /></ProtectedRoute>} />
             <Route path="/training" element={<TrainingPage canEdit={canEdit} />} />
             <Route path="/training/new" element={<ProtectedRoute canEdit={canEdit}><NewTrainingPage session={session} /></ProtectedRoute>} />
-            <Route path="/training/:trainingId/edit" element={<ProtectedRoute canEdit={canEdit}><EditTrainingPage session={session} /></ProtectedRoute>} />
+            <Route path="/training/:trainingId/edit" element={<ProtectedRoute canEdit={canEdit}><EditTrainingPage /></ProtectedRoute>} />
             <Route path="/assets" element={<AssetsPage canEdit={canEdit} />} />
             <Route path="/assets/new" element={<ProtectedRoute canEdit={canEdit}><NewAssetPage /></ProtectedRoute>} />
             <Route path="/assets/:assetId/edit" element={<ProtectedRoute canEdit={canEdit}><EditAssetPage /></ProtectedRoute>} />

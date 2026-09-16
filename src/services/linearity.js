@@ -1,7 +1,13 @@
 import { supabase } from "../lib/supabase";
+import {
+  LINEARITY_CONFLICT_MESSAGE,
+  expectedOperationalTimestamp,
+  operationalMutationError,
+} from "../utils/operationalConcurrency";
 
 const linearitySelection = `
   id,
+  updated_at,
   instrument_id,
   customer_id,
   instrument_name_snapshot,
@@ -23,21 +29,23 @@ const linearitySelection = `
   )
 `;
 
-export async function getLinearityRecords() {
+export async function getLinearityRecords({ signal } = {}) {
   const { data, error } = await supabase
     .from("linearity_records")
     .select(linearitySelection)
-    .order("performed_date", { ascending: true });
+    .order("performed_date", { ascending: true })
+    .abortSignal(signal);
 
   if (error) throw error;
   return data ?? [];
 }
 
-export async function getLinearityRecord(recordId) {
+export async function getLinearityRecord(recordId, { signal } = {}) {
   const { data, error } = await supabase
     .from("linearity_records")
     .select(linearitySelection)
     .eq("id", Number(recordId))
+    .abortSignal(signal)
     .single();
 
   if (error) throw error;
@@ -94,10 +102,13 @@ export async function createLinearityRecord(values) {
 }
 
 export async function updateLinearityRecord(recordId, values) {
-  const { error } = await supabase
-    .from("linearity_records")
-    .update(linearityPayload(values))
-    .eq("id", Number(recordId));
-
-  if (error) throw error;
+  const { error } = await supabase.rpc("update_linearity_record_atomic", {
+    p_record_id: Number(recordId),
+    p_values: linearityPayload(values),
+    p_expected_updated_at: expectedOperationalTimestamp(
+      values.expectedUpdatedAt,
+      "linearity record"
+    ),
+  });
+  if (error) throw operationalMutationError(error, LINEARITY_CONFLICT_MESSAGE);
 }

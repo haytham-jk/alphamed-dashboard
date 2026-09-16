@@ -141,6 +141,13 @@ export default function BioplexMatchingImportReviewPage() {
     () => rows.filter((row) => BLOCKING.has(drafts[row.id]?.reviewStatus) && drafts[row.id]?.proposedAction !== "Exclude"),
     [rows, drafts]
   );
+  const firstVisibleBlockingRowId = useMemo(
+    () => visibleRows.find((row) =>
+      BLOCKING.has(drafts[row.id]?.reviewStatus) &&
+      drafts[row.id]?.proposedAction !== "Exclude"
+    )?.id ?? null,
+    [visibleRows, drafts]
+  );
   const summary = useMemo(() => {
     const result = { total: rows.length, visible: visibleRows.length, selected: selected.size, blocking: blockingRows.length, invalid: 0, duplicates: 0 };
     rows.forEach((row) => {
@@ -178,17 +185,6 @@ export default function BioplexMatchingImportReviewPage() {
       return next;
     });
   }
-  function applyLocal(ids, changes) {
-    const idSet = new Set(ids);
-    setRows((current) => current.map((row) => idSet.has(row.id) ? {
-      ...row,
-      review_status: changes.reviewStatus ?? row.review_status,
-      proposed_action: changes.proposedAction ?? row.proposed_action,
-      resolution_notes: changes.resolutionNotes ?? row.resolution_notes,
-    } : row));
-    setDrafts((current) => Object.fromEntries(Object.entries(current).map(([id, draft]) => [id, idSet.has(Number(id)) ? { ...draft, ...changes } : draft])));
-  }
-
   async function bulkAction(action) {
     const ids = [...selected];
     if (!ids.length) { setError("Select at least one row first."); return; }
@@ -200,10 +196,10 @@ export default function BioplexMatchingImportReviewPage() {
     try {
       setBusy(true);
       setError("");
-      await bulkUpdateBioplexImportRows(ids, changes);
+      const selectedRows = rows.filter((row) => selected.has(row.id));
+      await bulkUpdateBioplexImportRows(importId, importRecord.review_version, selectedRows, changes);
       await refreshBioplexImport(importId);
-      applyLocal(ids, changes);
-      setSelected(new Set());
+      await load();
     } catch (actionError) {
       setError(actionError.message || "Unable to apply the bulk action.");
     } finally {
@@ -221,9 +217,9 @@ export default function BioplexMatchingImportReviewPage() {
     try {
       setBusy(true);
       setError("");
-      await updateBioplexImportRow(row.id, draft);
+      await updateBioplexImportRow(importId, importRecord.review_version, row, draft);
       await refreshBioplexImport(importId);
-      applyLocal([row.id], draft);
+      await load();
       setEditingId(null);
     } catch (saveError) {
       setError(saveError.message || "Unable to save this review row.");
@@ -254,13 +250,12 @@ export default function BioplexMatchingImportReviewPage() {
     try {
       setBusy(true);
       setError("");
-      await refreshBioplexImport(importId);
       const databaseBlockers = await getBioplexImportBlockingRows(importId);
       if (databaseBlockers.length) {
         const first = databaseBlockers[0];
         throw new Error(`The database still has ${databaseBlockers.length} blocking row${databaseBlockers.length === 1 ? "" : "s"}. First blocker: ${first.sheet_name}:${first.source_row_number}, ${first.review_status}, action ${first.proposed_action}.`);
       }
-      await commitBioplexImport(importId);
+      await commitBioplexImport(importId, importRecord.review_version);
       navigate("/bioplex-matching-check", { state: { message: "BioPlex matching data imported successfully." } });
     } catch (commitError) {
       setError(commitError.message || "Unable to commit the matching import.");
@@ -333,7 +328,7 @@ export default function BioplexMatchingImportReviewPage() {
             const draft = drafts[row.id];
             const blocking = BLOCKING.has(draft?.reviewStatus) && draft?.proposedAction !== "Exclude";
             const open = editingId === row.id;
-            return <FragmentRow key={row.id} row={row} draft={draft} blocking={blocking} open={open} selected={selected.has(row.id)} firstBlockingRef={firstBlockingRef} toggleRow={toggleRow} setEditingId={setEditingId} patch={patch} saveRow={saveRow} busy={busy}/>;
+            return <FragmentRow key={row.id} row={row} draft={draft} blocking={blocking} isFirstBlocking={row.id === firstVisibleBlockingRowId} open={open} selected={selected.has(row.id)} firstBlockingRef={firstBlockingRef} toggleRow={toggleRow} setEditingId={setEditingId} patch={patch} saveRow={saveRow} busy={busy}/>;
           })}
           {!visibleRows.length && <tr><td colSpan={11} className="p-10 text-center text-slate-400">No rows match the current filters.</td></tr>}
         </tbody>
@@ -342,9 +337,9 @@ export default function BioplexMatchingImportReviewPage() {
   </div>;
 }
 
-function FragmentRow({ row, draft, blocking, open, selected, firstBlockingRef, toggleRow, setEditingId, patch, saveRow, busy }) {
+function FragmentRow({ row, draft, blocking, isFirstBlocking, open, selected, firstBlockingRef, toggleRow, setEditingId, patch, saveRow, busy }) {
   return <>
-    <tr ref={blocking && !firstBlockingRef.current ? firstBlockingRef : undefined} className={`border-t border-slate-800 ${selected ? "bg-blue-950/30" : blocking ? "bg-amber-950/15" : "bg-slate-900"}`}>
+    <tr ref={isFirstBlocking ? firstBlockingRef : undefined} className={`border-t border-slate-800 ${selected ? "bg-blue-950/30" : blocking ? "bg-amber-950/15" : "bg-slate-900"}`}>
       <td className="p-3"><input type="checkbox" checked={selected} onChange={() => toggleRow(row.id)} aria-label={`Select ${row.sheet_name} row ${row.source_row_number}`}/></td>
       <td className="p-3 whitespace-nowrap">{row.sheet_name}:{row.source_row_number}</td>
       <td className="p-3">{draft?.assayName}</td><td className="p-3">{row.material_type}</td><td className="p-3 font-medium">{draft?.lotNumber}</td><td className="p-3">{draft?.relatedLot || ""}</td>

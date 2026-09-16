@@ -1,14 +1,15 @@
+import { formatDateOnly, getLocalDateOnly, parseIsoDateOnly } from "./dates.js";
+
 export function formatBioplexDate(value) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value ?? "").trim());
-  return match ? `${match[3]}/${match[2]}/${match[1]}` : "";
+  return formatDateOnly(value, "");
 }
+
 export function dateCell(value) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value ?? "").trim());
-  if (!match) return null;
-  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12);
-  return Number.isNaN(date.getTime()) ? null : date;
+  const parts = parseIsoDateOnly(value, { strict: true });
+  if (!parts) return null;
+  return new Date(parts.year, parts.month - 1, parts.day, 12);
 }
-export function localDateOnly() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+
+export function localDateOnly(date = new Date()) {
+  return getLocalDateOnly(date);
 }

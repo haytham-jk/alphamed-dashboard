@@ -6,16 +6,16 @@ import { ArrowLeft, Pencil, Plus, Trash2 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { createCustomer, findSimilarCustomers, getCustomer, updateCustomer } from "../services/customers";
 import { deleteCustomer } from "../services/deletions";
-import { contactFingerprint } from "../utils/customerDuplicates";
+import { contactsShareIdentity, normalizeCustomerContact } from "../utils/customerDuplicates";
 import { EMIRATES } from "../constants/locationOptions";
 const DESIGNATIONS = ["Lab Director", "Lab Manager", "Lab Supervisor", "Lab Technician", "Pathologist", "Quality Supervisor"];
 const inputClass = "mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2";
 const emptyContact = () => ({ key: crypto.randomUUID(), name: "", designation: "Lab Manager", phoneNumber: "", email: "" });
-const initialValues = { customerName: "", emirate: "", isActive: true, isIsoEiacAccredited: false, isoEiacAccreditationNumber: "", isCapAccredited: false, contacts: [] };
+const initialValues = { expectedUpdatedAt: "", customerName: "", emirate: "", isActive: true, isIsoEiacAccredited: false, isoEiacAccreditationNumber: "", isCapAccredited: false, contacts: [] };
 export default function CustomerFormPage() {
   const { customerId } = useParams(); const navigate = useNavigate(); const editing = Boolean(customerId); const formRef = useRef(null);
   const [values, setValues] = useState(initialValues); const [contactDraft, setContactDraft] = useState(null); const [editingContactKey, setEditingContactKey] = useState(""); const [similar, setSimilar] = useState([]); const [error, setError] = useState(""); const [dirty, setDirty] = useState(false); const [saving, setSaving] = useState(false); const [deleting, setDeleting] = useState(false); const { confirmDiscard } = useUnsavedChanges(dirty);
-  useEffect(() => { if (!editing) return; getCustomer(customerId).then((customer) => setValues({ customerName: customer.customer_name || "", emirate: customer.emirate || "", isActive: customer.is_active, isIsoEiacAccredited: Boolean(customer.is_iso_eiac_accredited), isoEiacAccreditationNumber: customer.iso_eiac_accreditation_number || "", isCapAccredited: Boolean(customer.is_cap_accredited), contacts: (customer.customer_contacts ?? []).map((contact) => ({ key: String(contact.id), name: contact.name, designation: contact.designation, phoneNumber: contact.phone_number || "", email: contact.email || "" })) })).catch((loadError) => setError(loadError.message)); }, [customerId, editing]);
+  useEffect(() => { if (!editing) return; getCustomer(customerId).then((customer) => setValues({ expectedUpdatedAt: customer.updated_at || "", customerName: customer.customer_name || "", emirate: customer.emirate || "", isActive: customer.is_active, isIsoEiacAccredited: Boolean(customer.is_iso_eiac_accredited), isoEiacAccreditationNumber: customer.iso_eiac_accreditation_number || "", isCapAccredited: Boolean(customer.is_cap_accredited), contacts: (customer.customer_contacts ?? []).map((contact) => ({ key: String(contact.id), name: contact.name, designation: contact.designation, phoneNumber: contact.phone_number || "", email: contact.email || "" })) })).catch((loadError) => setError(loadError.message)); }, [customerId, editing]);
   function patch(field, value) { setDirty(true); if (field === "customerName" || field === "emirate") setSimilar([]); setValues((current) => ({ ...current, [field]: value })); }
   function openNewContact() { setEditingContactKey(""); setContactDraft(emptyContact()); setError(""); requestAnimationFrame(() => document.querySelector('[name="draftContactName"]')?.focus()); }
   function openEditContact(contact) { setEditingContactKey(contact.key); setContactDraft({ ...contact }); setError(""); requestAnimationFrame(() => document.querySelector('[name="draftContactName"]')?.focus()); }
@@ -23,9 +23,8 @@ export default function CustomerFormPage() {
   function commitContact() {
     const name = contactDraft?.name.trim(); const designation = contactDraft?.designation;
     if (!name || !designation) { setError("Contact name and designation are required."); focusFirstInvalidField(formRef.current, !name ? '[name="draftContactName"]' : '[name="draftContactDesignation"]'); return; }
-    const candidate = { ...contactDraft, name, email: contactDraft.email.trim(), phoneNumber: contactDraft.phoneNumber.trim() };
-    const fingerprint = contactFingerprint(candidate);
-    if (fingerprint && values.contacts.some((contact) => contact.key !== editingContactKey && contactFingerprint(contact) === fingerprint)) { setError("A contact with the same email or phone number is already listed."); focusFirstInvalidField(formRef.current, candidate.email ? '[name="draftContactEmail"]' : '[name="draftContactPhone"]'); return; }
+    const candidate = normalizeCustomerContact({ ...contactDraft, name, designation });
+    if (values.contacts.some((contact) => contact.key !== editingContactKey && contactsShareIdentity(contact, candidate))) { setError("A contact with the same email or phone number is already listed."); focusFirstInvalidField(formRef.current, candidate.email ? '[name="draftContactEmail"]' : '[name="draftContactPhone"]'); return; }
     patch("contacts", editingContactKey ? values.contacts.map((contact) => contact.key === editingContactKey ? candidate : contact) : [...values.contacts, candidate]); cancelContact();
   }
   function removeContact(key) { patch("contacts", values.contacts.filter((contact) => contact.key !== key)); if (editingContactKey === key) cancelContact(); }

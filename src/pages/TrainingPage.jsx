@@ -1,36 +1,23 @@
 import SelectInput from "../components/ui/SelectInput";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, RefreshCw, Search } from "lucide-react";
 import { getTrainingRecords } from "../services/training";
+import useAsyncResource from "../hooks/useAsyncResource";
+import { ErrorState, LoadingState } from "../components/ui/AsyncState";
 import { formatDateOnly } from "../utils/dateDisplay";
 import PaginationControls from "../components/ui/PaginationControls";
 const PAGE_SIZE = 20;
 
 export default function TrainingPage({ canEdit }) {
   const navigate = useNavigate();
-  const [records, setRecords] = useState([]);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("newest");
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  function loadRecords() {
-    setLoading(true);
-    setError("");
-
-    getTrainingRecords()
-      .then(setRecords)
-      .catch((loadError) =>
-        setError(loadError?.message || "Unable to load training records.")
-      )
-      .finally(() => setLoading(false));
-  }
-
-  useEffect(() => {
-    loadRecords();
-  }, []);
+  const loader = useCallback(({ signal }) => getTrainingRecords({ signal }), []);
+  const { data: records, loading, refreshing, error, refresh: loadRecords } = useAsyncResource(
+    loader, [loader], { initialData: [], fallbackError: "Unable to load training records." }
+  );
 
   useEffect(() => {
     setPage(1);
@@ -100,13 +87,7 @@ export default function TrainingPage({ canEdit }) {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="py-16 text-center text-slate-400" role="status">
-        Loading training records...
-      </div>
-    );
-  }
+  if (loading) return <LoadingState message="Loading training records..." />;
 
   return (
     <div className="space-y-5">
@@ -121,6 +102,7 @@ export default function TrainingPage({ canEdit }) {
           <button
             type="button"
             onClick={loadRecords}
+            disabled={refreshing}
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-700 px-4 py-2"
           >
             <RefreshCw size={17} aria-hidden="true" />
@@ -174,14 +156,7 @@ export default function TrainingPage({ canEdit }) {
         </label>
       </section>
 
-      {error && (
-        <div
-          className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-300"
-          role="alert"
-        >
-          {error}
-        </div>
-      )}
+      {error && <ErrorState message={error} onRetry={loadRecords} retrying={refreshing} />}
 
       <p className="text-sm text-slate-500" aria-live="polite">
         Showing {visibleRecords.length} of {filteredRecords.length} records

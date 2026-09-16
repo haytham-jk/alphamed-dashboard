@@ -1,38 +1,15 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { CalendarDays } from "lucide-react";
+import { formatDateOnly, parseDisplayDateOnly } from "../../utils/dates.js";
 
 function formatIsoDate(value) {
-  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) return "";
-
-  const [, year, month, day] = match;
-  return `${day}/${month}/${year}`;
-}
-
-function parseDisplayDate(value) {
-  const match = String(value || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (!match) return null;
-
-  const [, day, month, year] = match;
-  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
-
-  if (
-    date.getUTCFullYear() !== Number(year) ||
-    date.getUTCMonth() + 1 !== Number(month) ||
-    date.getUTCDate() !== Number(day)
-  ) {
-    return null;
-  }
-
-  return `${year}-${month}-${day}`;
+  return formatDateOnly(value, "");
 }
 
 function formatWhileTyping(value) {
   const digits = String(value || "").replace(/\D/g, "").slice(0, 8);
   if (digits.length <= 2) return digits;
-  if (digits.length <= 4) {
-    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-  }
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
 
@@ -67,24 +44,21 @@ export default function DatePickerInput({
     });
   }
 
+  function isWithinRange(isoValue) {
+    return (!min || isoValue >= min) && (!max || isoValue <= max);
+  }
+
   function commitDisplayValue() {
     if (!displayValue) {
       setFormatError(false);
       emitChange("");
       return;
     }
-
-    const isoValue = parseDisplayDate(displayValue);
-    if (!isoValue) {
+    const isoValue = parseDisplayDateOnly(displayValue);
+    if (!isoValue || !isWithinRange(isoValue)) {
       setFormatError(true);
       return;
     }
-
-    if ((min && isoValue < min) || (max && isoValue > max)) {
-      setFormatError(true);
-      return;
-    }
-
     setFormatError(false);
     setDisplayValue(formatIsoDate(isoValue));
     emitChange(isoValue);
@@ -94,17 +68,9 @@ export default function DatePickerInput({
     const nextDisplayValue = formatWhileTyping(event.target.value);
     setDisplayValue(nextDisplayValue);
     setFormatError(false);
-
-    const isoValue = parseDisplayDate(nextDisplayValue);
-    if (
-      isoValue &&
-      (!min || isoValue >= min) &&
-      (!max || isoValue <= max)
-    ) {
-      emitChange(isoValue);
-    } else if (!nextDisplayValue) {
-      emitChange("");
-    }
+    const isoValue = parseDisplayDateOnly(nextDisplayValue);
+    if (isoValue && isWithinRange(isoValue)) emitChange(isoValue);
+    else if (!nextDisplayValue) emitChange("");
   }
 
   function handleCalendarChange(event) {
@@ -116,7 +82,6 @@ export default function DatePickerInput({
 
   function openCalendar() {
     if (disabled || !calendarInputRef.current) return;
-
     calendarInputRef.current.focus();
     if (typeof calendarInputRef.current.showPicker === "function") {
       try {
@@ -152,11 +117,8 @@ export default function DatePickerInput({
         aria-label={ariaLabel}
         aria-invalid={isInvalid || undefined}
         aria-describedby={ariaDescription}
-        className={`w-full rounded-xl border bg-slate-950 px-3 py-2 pr-11 text-slate-100 outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-60 ${
-          isInvalid ? "border-red-700" : "border-slate-700"
-        }`}
+        className={`w-full rounded-xl border bg-slate-950 px-3 py-2 pr-11 text-slate-100 outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-60 ${isInvalid ? "border-red-700" : "border-slate-700"}`}
       />
-
       <input
         ref={calendarInputRef}
         type="date"
@@ -169,7 +131,6 @@ export default function DatePickerInput({
         aria-hidden="true"
         className="pointer-events-none absolute h-px w-px opacity-0"
       />
-
       <button
         type="button"
         onClick={openCalendar}
@@ -179,7 +140,6 @@ export default function DatePickerInput({
       >
         <CalendarDays size={18} aria-hidden="true" />
       </button>
-
       {formatError && (
         <span id={formatHelpId} className="mt-1 block text-xs text-red-400">
           Enter a valid date in DD/MM/YYYY format.

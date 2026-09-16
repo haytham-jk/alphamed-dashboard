@@ -1,5 +1,5 @@
 import { formatDateOnly } from "../utils/dateDisplay";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ChevronDown,
@@ -9,24 +9,21 @@ import {
   Search,
 } from "lucide-react";
 import { getAssets } from "../services/assets";
+import useAsyncResource from "../hooks/useAsyncResource";
+import { ErrorState, LoadingState } from "../components/ui/AsyncState";
 
 export default function AssetsPage({ canEdit }) {
-  const [assets, setAssets] = useState([]);
+  const loader = useCallback(({ signal }) => getAssets({ signal }), []);
+  const { data: assets, loading, refreshing, error, retry } = useAsyncResource(loader, [loader], { initialData: [], fallbackError: "Unable to load assets." });
   const [query, setQuery] = useState("");
   const [view, setView] = useState("Active");
   const [expandedGroups, setExpandedGroups] = useState({});
-  const [error, setError] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
   const copyTimer = useRef(null);
 
-  useEffect(() => {
-    getAssets()
-      .then(setAssets)
-      .catch((loadError) => setError(loadError.message));
-  }, []);
 
   useEffect(() => {
-    return () => {
+  return () => {
       if (copyTimer.current) window.clearTimeout(copyTimer.current);
     };
   }, []);
@@ -105,6 +102,9 @@ export default function AssetsPage({ canEdit }) {
       [instrumentType]: !current[instrumentType],
     }));
   }
+
+  if (loading) return <LoadingState message="Loading assets..." />;
+  if (!assets && error) return <ErrorState message={error} onRetry={retry} retrying={refreshing} />;
 
   return (
     <div className="space-y-5">
@@ -192,7 +192,7 @@ export default function AssetsPage({ canEdit }) {
         </div>
       </div>
 
-      {error && <div className="text-red-300">{error}</div>}
+      {error && <ErrorState message={error} onRetry={retry} retrying={refreshing} />}
 
       <div className="space-y-4">
         {groupedAssets.map((group) => {

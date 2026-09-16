@@ -47,6 +47,7 @@ export default function EditUnityRealTimePage() {
           .join("\n\n");
 
         setValues({
+          expectedUpdatedAt: record.updated_at || "",
           customerId: String(record.customer_id || ""),
           primaryId: record.primary_id || "",
           unityRtExpiryDate: record.unity_rt_expiry_date || "",

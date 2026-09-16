@@ -30,6 +30,7 @@ export default function EditAssetPage() {
         setCustomers(customerOptions);
         const knownType = INSTRUMENT_TYPES.includes(asset.instrument_name);
         setValues({
+          expectedUpdatedAt: asset.updated_at || "",
           customerId: String(asset.customer_id || ""),
           instrumentType: knownType ? asset.instrument_name : "Other",
           customInstrumentName: knownType ? "" : asset.instrument_name || "",

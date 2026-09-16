@@ -16,6 +16,7 @@ function toFormValues(row) {
 
   return {
     ...createEmptyCaseValues(),
+    expectedUpdatedAt: row.updated_at ?? "",
     title: row.case_title ?? "",
     description: row.issue_description ?? "",
     customerIds,
@@ -44,7 +45,7 @@ function toFormValues(row) {
   };
 }
 
-export default function EditCasePage({ session }) {
+export default function EditCasePage() {
   const { caseId } = useParams();
   const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
@@ -70,7 +71,7 @@ export default function EditCasePage({ session }) {
   }
 
   async function handleSubmit(values) {
-    await updateSupportCase(caseId, values, session.user.id);
+    await updateSupportCase(caseId, values);
     setDirty(false);
       navigate(`/cases/${caseId}`, { state: { message: "Case saved successfully." } });
   }

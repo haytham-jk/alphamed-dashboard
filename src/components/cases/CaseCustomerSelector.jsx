@@ -1,14 +1,7 @@
 import "./caseCustomerScrollbar.css";
 import { useId, useMemo, useState } from "react";
 
-function normalizeId(value) {
-  if (value === null || value === undefined || value === "") return "";
-  return String(value);
-}
-
-function normalizeIds(values) {
-  return [...new Set((values || []).map(normalizeId).filter(Boolean))];
-}
+import { toId, toIdList } from "../../utils/normalizers";
 
 export default function CaseCustomerSelector({
   customers = [],
@@ -21,10 +14,10 @@ export default function CaseCustomerSelector({
   const [search, setSearch] = useState("");
   const searchId = useId();
   const selectedIds = useMemo(
-    () => normalizeIds(customerIds),
+    () => toIdList(customerIds),
     [customerIds]
   );
-  const primaryId = normalizeId(primaryCustomerId);
+  const primaryId = toId(primaryCustomerId);
 
   const filteredCustomers = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -39,7 +32,7 @@ export default function CaseCustomerSelector({
   }, [customers, search]);
 
   function toggleCustomer(rawCustomerId) {
-    const customerId = normalizeId(rawCustomerId);
+    const customerId = toId(rawCustomerId);
     const selected = selectedIds.includes(customerId);
     const nextIds = selected
       ? selectedIds.filter((id) => id !== customerId)
@@ -113,7 +106,7 @@ export default function CaseCustomerSelector({
 
           <div className="case-customer-scrollbar max-h-80 space-y-2 overflow-y-auto pr-2" style={{ scrollbarColor: "#475569 #020617", scrollbarWidth: "thin" }}>
             {filteredCustomers.map((customer) => {
-              const customerId = normalizeId(customer.id);
+              const customerId = toId(customer.id);
               const selected = selectedIds.includes(customerId);
 
               return (

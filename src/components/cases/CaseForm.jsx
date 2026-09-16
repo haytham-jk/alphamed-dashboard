@@ -12,6 +12,7 @@ import {
   CASE_STATUSES,
   REQUEST_TYPES,
   SOURCE_OPTIONS,
+  TERMINAL_CASE_STATUSES,
 } from "../../constants/caseOptions";
 import { normalizeCaseFormValues } from "../../utils/caseFormHelpers";
 import { validateCase } from "../../utils/caseValidation";
@@ -60,7 +61,7 @@ export default function CaseForm({
   }, [initialValues]);
 
   const showResolution = useMemo(
-    () => ["Resolved", "Closed", "Cancelled"].includes(values.status),
+    () => TERMINAL_CASE_STATUSES.includes(values.status),
     [values.status]
   );
 
