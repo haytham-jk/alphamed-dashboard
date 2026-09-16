@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabase";
+import { normalizeDashboardLinearitySummary } from "../utils/dashboardLinearity";
 import {
   LINEARITY_CONFLICT_MESSAGE,
   expectedOperationalTimestamp,
@@ -111,4 +112,23 @@ export async function updateLinearityRecord(recordId, values) {
     ),
   });
   if (error) throw operationalMutationError(error, LINEARITY_CONFLICT_MESSAGE);
+}
+
+export async function getDashboardLinearitySummary(referenceDate, { signal } = {}) {
+  const request = supabase.rpc("get_dashboard_linearity_summary", {
+    p_reference_date: referenceDate,
+    p_limit: 10,
+  });
+  if (signal) request.abortSignal(signal);
+  const { data, error } = await request;
+  if (error) throw error;
+  return normalizeDashboardLinearitySummary(data);
+}
+
+import { normalizeLinearityQuery, normalizePage } from "../utils/operationalListQuery";
+export async function getLinearityRecordsPage(values, { signal } = {}) {
+  const q = normalizeLinearityQuery(values);
+  const request = supabase.rpc("search_linearity_records", { p_query:q.query||null,p_due_status:q.dueStatus,p_page:q.page,p_page_size:q.pageSize,p_reference_date:q.referenceDate });
+  if (signal) request.abortSignal(signal);
+  const { data, error } = await request; if (error) throw error; return normalizePage(data,q.page);
 }

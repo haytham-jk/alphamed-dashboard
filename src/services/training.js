@@ -94,3 +94,22 @@ export async function updateTrainingRecord(recordId, values) {
   });
   if (error) throw operationalMutationError(error, TRAINING_CONFLICT_MESSAGE);
 }
+
+import {
+  normalizeTrainingListQuery,
+  normalizeTrainingPageResult,
+} from "../utils/assetTrainingListQuery";
+
+export async function getTrainingRecordsPage(values, { signal } = {}) {
+  const query = normalizeTrainingListQuery(values);
+  const request = supabase.rpc("search_training_records", {
+    p_query: query.query || null,
+    p_sort: query.sort,
+    p_page: query.page,
+    p_page_size: query.pageSize,
+  });
+  if (signal) request.abortSignal(signal);
+  const { data, error } = await request;
+  if (error) throw error;
+  return normalizeTrainingPageResult(data, query.page);
+}

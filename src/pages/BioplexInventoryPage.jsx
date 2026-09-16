@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   BarChart3,
   CalendarClock,
@@ -29,12 +29,13 @@ function Metric({ label, value }) {
 
 export default function BioplexInventoryPage({ canEdit, profile }) {
   const isAdmin = profile?.role === "admin";
+  const [searchParams, setSearchParams] = useSearchParams();
   const [counts, setCounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
   const [customerFilter, setCustomerFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState(() => searchParams.get("status") ?? "");
 
   const load = useCallback(async () => {
     try {
@@ -151,7 +152,13 @@ export default function BioplexInventoryPage({ canEdit, profile }) {
           <span className="mb-2 block text-sm font-medium">Status</span>
           <select
             value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
+            onChange={(event) => {
+              const value = event.target.value;
+              setStatusFilter(value);
+              const next = new URLSearchParams(searchParams);
+              value ? next.set("status", value) : next.delete("status");
+              setSearchParams(next, { replace: true });
+            }}
             className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 pr-12"
           >
             <option value="">All statuses</option>

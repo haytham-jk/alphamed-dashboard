@@ -22,6 +22,7 @@ import {
 } from "../services/customers";
 import { contactFingerprint } from "../utils/customerDuplicates";
 import { formatDateOnly } from "../utils/dateDisplay";
+import { safeReturnPath } from "../utils/returnNavigation";
 
 const DESIGNATIONS = [
   "Lab Director",
@@ -47,7 +48,7 @@ function emptyContact() {
 export default function CustomerSiteOverviewPage({ canEdit }) {
   const { customerId } = useParams();
   const location = useLocation();
-  const customersReturnTo = location.state?.customersReturnTo || "/customers";
+  const customersReturnTo = safeReturnPath(location.state?.customersReturnTo, "/customers", "/customers");
   const customersReturnState = { focusCustomerId: Number(customerId) };
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);

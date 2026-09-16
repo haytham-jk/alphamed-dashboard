@@ -1,4 +1,5 @@
 import { formatDateOnly, getDateUrgency } from "../utils/dateDisplay";
+import { getLocalDateOnly } from "../utils/dates";
 import { useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -8,11 +9,12 @@ import {
   BriefcaseBusiness,
   Clock,
   GitCommitHorizontal,
+  Boxes,
   ShieldAlert,
 } from "lucide-react";
-import { getSupportCases } from "../services/cases";
-import { getLinearityRecords } from "../services/linearity";
-import { ACTIVE_CASE_STATUSES } from "../constants/caseOptions";
+import { getDashboardCaseSummary } from "../services/cases";
+import { getDashboardLinearitySummary } from "../services/linearity";
+import { getDashboardBioplexSummary } from "../services/bioplexInventory";
 import useAsyncResource from "../hooks/useAsyncResource";
 import { ErrorState, LoadingState } from "../components/ui/AsyncState";
 import {
@@ -20,12 +22,7 @@ import {
   getCasePriorityClass,
   getCaseStatusClass,
 } from "../constants/caseDisplay";
-import {
-  calculateDaysRemaining,
-  calculateNextDueDate,
-  formatRemainingPeriod,
-  getLinearityDueStatus,
-} from "../utils/linearityDates";
+import { formatRemainingPeriod } from "../utils/linearityDates";
 
 const interactiveCardClass =
   "transition hover:-translate-y-0.5 hover:border-purple-500/70 hover:brightness-125 hover:saturate-110 hover:shadow-[0_0_0_1px_rgba(168,85,247,0.55),0_8px_20px_rgba(88,28,135,0.22)] focus-visible:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950";
@@ -96,101 +93,34 @@ function QuickViewHeader({
 
 export default function DashboardPage({ canEdit }) {
   const loadDashboard = useCallback(async ({ signal }) => {
-    const [cases, linearityRecords] = await Promise.all([
-      getSupportCases({ signal }),
-      getLinearityRecords({ signal }),
+    const referenceDate = getLocalDateOnly();
+    const [caseSummary, linearitySummary, bioplexSummary] = await Promise.all([
+      getDashboardCaseSummary(referenceDate, { signal }),
+      getDashboardLinearitySummary(referenceDate, { signal }),
+      getDashboardBioplexSummary(referenceDate, { signal }),
     ]);
-    return { cases, linearityRecords };
+    return { caseSummary, linearitySummary, bioplexSummary };
   }, []);
   const { data, loading, refreshing, error, retry } = useAsyncResource(
     loadDashboard,
     [loadDashboard],
     { fallbackError: "Unable to load Dashboard data." }
   );
-  const { cases = [], linearityRecords = [] } = data ?? {};
-
-  const activeCases = useMemo(
-    () => cases.filter((item) => ACTIVE_CASE_STATUSES.includes(item.status)),
-    [cases]
-  );
-
+  const { caseSummary = {}, linearitySummary = {}, bioplexSummary = {} } = data ?? {};
+  const metrics = {
+    active: caseSummary.active ?? 0,
+    overdue: caseSummary.overdue ?? 0,
+    unresolved: caseSummary.unresolved ?? 0,
+    escalated: caseSummary.escalated ?? 0,
+  };
   const overdueCases = useMemo(
-    () =>
-      activeCases
-        .map((item) => ({
-          ...item,
-          followUpUrgency: getDateUrgency(item.followUpDate),
-        }))
-        .filter((item) => item.followUpUrgency.rank === 0)
-        .sort((first, second) =>
-          String(first.followUpDate || "").localeCompare(
-            String(second.followUpDate || "")
-          )
-        ),
-    [activeCases]
+    () => (caseSummary.overdueCases ?? []).map((item) => ({
+      ...item,
+      followUpUrgency: getDateUrgency(item.followUpDate),
+    })),
+    [caseSummary.overdueCases]
   );
-
-  const followUpSortedActiveCases = useMemo(
-    () =>
-      activeCases
-        .map((item) => ({
-          ...item,
-          followUpUrgency: getDateUrgency(item.followUpDate),
-        }))
-        .sort((first, second) => {
-          const urgencyDifference =
-            first.followUpUrgency.rank - second.followUpUrgency.rank;
-
-          if (urgencyDifference !== 0) return urgencyDifference;
-
-          const firstFollowUp = String(first.followUpDate || "9999-12-31");
-          const secondFollowUp = String(second.followUpDate || "9999-12-31");
-          const dateDifference = firstFollowUp.localeCompare(secondFollowUp);
-
-          if (dateDifference !== 0) return dateDifference;
-
-          return String(first.title || "").localeCompare(
-            String(second.title || "")
-          );
-        }),
-    [activeCases]
-  );
-
-  const metrics = useMemo(
-    () => ({
-      active: activeCases.length,
-      overdue: overdueCases.length,
-      unresolved: cases.filter((item) => item.status === "Unresolved").length,
-      escalated: cases.filter((item) => item.status === "Escalated").length,
-    }),
-    [cases, activeCases, overdueCases]
-  );
-
-  const attentionLinearity = useMemo(
-    () =>
-      linearityRecords
-        .map((record) => {
-          const daysRemaining = calculateDaysRemaining(
-            record.performed_date,
-            record.frequency_months
-          );
-          return {
-            ...record,
-            daysRemaining,
-            nextDueDate: calculateNextDueDate(
-              record.performed_date,
-              record.frequency_months
-            ),
-            dueStatus: getLinearityDueStatus(daysRemaining),
-          };
-        })
-        .filter((record) =>
-          ["Overdue", "Due today", "Due soon"].includes(record.dueStatus)
-        )
-        .sort((first, second) => first.daysRemaining - second.daysRemaining),
-    [linearityRecords]
-  );
-
+  const attentionLinearity = linearitySummary.attentionRecords ?? [];
   if (loading) return <LoadingState message="Loading Dashboard..." />;
   if (!data && error) return <ErrorState message={error} onRetry={retry} retrying={refreshing} />;
 
@@ -255,17 +185,17 @@ export default function DashboardPage({ canEdit }) {
         <QuickViewHeader
           icon={BriefcaseBusiness}
           eyebrow="Case operations"
-          title="Active case quick view"
-          description="Open cases requiring attention"
-          count={activeCases.length}
-          to="/cases?status=Active"
-          linkLabel="View all active cases"
+          title="Overdue case quick view"
+          description="Active cases past their follow-up date"
+          count={overdueCases.length}
+          to="/cases?status=Active&overdue=true&sort=followUp"
+          linkLabel="View all overdue cases"
           accent="border-blue-800/70 bg-gradient-to-r from-blue-950/80 via-blue-950/35 to-slate-900"
           iconClass="border border-blue-800 bg-blue-950 text-blue-300"
           countClass="border-blue-700 bg-blue-950 text-blue-300"
         />
         <div className="space-y-2.5 bg-slate-950/35 p-4 sm:p-5">
-          {followUpSortedActiveCases.slice(0, 10).map((item) => (
+          {overdueCases.map((item) => (
             <Link
               key={item.databaseId}
               to={`/cases/${item.databaseId}`}
@@ -295,9 +225,9 @@ export default function DashboardPage({ canEdit }) {
               </span>
             </Link>
           ))}
-          {activeCases.length === 0 && (
+          {overdueCases.length === 0 && (
             <div className="rounded-xl border border-dashed border-slate-700 bg-slate-950/50 p-6 text-center text-slate-400">
-              No active cases.
+              No overdue cases.
             </div>
           )}
         </div>
@@ -309,7 +239,7 @@ export default function DashboardPage({ canEdit }) {
           eyebrow="Quality schedule"
           title="Linearity requiring attention"
           description="Due-soon and overdue records"
-          count={attentionLinearity.length}
+          count={linearitySummary.attentionCount ?? 0}
           to="/linearity"
           linkLabel="View linearity tracker"
           accent="border-violet-800/70 bg-gradient-to-r from-violet-950/80 via-violet-950/30 to-slate-900"
@@ -317,7 +247,7 @@ export default function DashboardPage({ canEdit }) {
           countClass="border-violet-700 bg-violet-950 text-violet-300"
         />
         <div className="space-y-2.5 bg-slate-950/35 p-4 sm:p-5">
-          {attentionLinearity.slice(0, 10).map((item) => (
+          {attentionLinearity.map((item) => (
             <Link
               key={item.id}
               to={`/linearity/${item.id}/edit`}
@@ -325,11 +255,11 @@ export default function DashboardPage({ canEdit }) {
             >
               <div className="min-w-0">
                 <p className="truncate font-semibold text-slate-100">
-                  {item.customers?.customer_name || "Unassigned"}
+                  {item.customerName || "Unassigned"}
                 </p>
                 <p className="mt-1 truncate text-sm text-slate-500">
-                  {item.instruments?.instrument_name ||
-                    item.instrument_name_snapshot ||
+                  {item.instrumentName ||
+                    item.instrumentNameSnapshot ||
                     "Not specified"}
                 </p>
               </div>
@@ -355,6 +285,35 @@ export default function DashboardPage({ canEdit }) {
               No overdue or due-soon linearity records.
             </div>
           )}
+        </div>
+      </section>
+
+      <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-lg shadow-black/10">
+        <QuickViewHeader
+          icon={Boxes}
+          eyebrow="BioPlex inventory"
+          title="Inventory requiring attention"
+          description="Expired lots, upcoming expiry, missing expiry, draft counts, and matching-review blockers"
+          count={(bioplexSummary.expired ?? 0) + (bioplexSummary.missingExpiry ?? 0) + (bioplexSummary.matchingWarnings ?? 0)}
+          to="/bioplex-inventory/attention"
+          linkLabel="View BioPlex attention items"
+          accent="border-cyan-800/70 bg-gradient-to-r from-cyan-950/80 via-cyan-950/30 to-slate-900"
+          iconClass="border border-cyan-800 bg-cyan-950 text-cyan-300"
+          countClass="border-cyan-700 bg-cyan-950 text-cyan-300"
+        />
+        <div className="grid gap-3 bg-slate-950/35 p-4 sm:grid-cols-2 lg:grid-cols-5 sm:p-5">
+          {[
+            ["Expired lots", bioplexSummary.expired ?? 0, "text-red-300", "/bioplex-inventory/attention?type=expired"],
+            ["Expiring in 30 days", bioplexSummary.expiring30 ?? 0, "text-amber-300", "/bioplex-inventory/attention?type=expiring"],
+            ["Missing expiry", bioplexSummary.missingExpiry ?? 0, "text-orange-300", "/bioplex-inventory/attention?type=missing-expiry"],
+            ["Draft counts", bioplexSummary.draftCounts ?? 0, "text-blue-300", "/bioplex-inventory?status=Draft"],
+            ["Matching warnings", bioplexSummary.matchingWarnings ?? 0, "text-violet-300", "/bioplex-inventory/attention?type=matching-warnings"],
+          ].map(([label, value, tone, destination]) => (
+            <Link key={label} to={destination} className="rounded-xl border border-slate-800 bg-slate-950 p-4 hover:border-cyan-700">
+              <p className="text-sm text-slate-500">{label}</p>
+              <p className={`mt-2 text-3xl font-semibold ${tone}`}>{value}</p>
+            </Link>
+          ))}
         </div>
       </section>
     </div>

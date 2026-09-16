@@ -27,42 +27,81 @@ import PwaUpdatePrompt from "./components/PwaUpdatePrompt";
 import FlashMessage from "./components/ui/FlashMessage";
 import { supabase } from "./lib/supabase";
 import { getCurrentProfile } from "./services/profile";
+import { preloadRoute, scheduleRoutePreloads } from "./utils/routePreload";
 
-const AssetsPage = lazy(() => import("./pages/AssetsPage"));
-const BioplexInventoryPage = lazy(() => import("./pages/BioplexInventoryPage"));
+const routeImporters = {
+  dashboard: () => import("./pages/DashboardPage"),
+  assets: () => import("./pages/AssetsPage"),
+  cases: () => import("./pages/CasesPage"),
+  customers: () => import("./pages/CustomersPage"),
+  eqas: () => import("./pages/EqasOnlinePage"),
+  linearity: () => import("./pages/LinearityPage"),
+  training: () => import("./pages/TrainingPage"),
+  unity: () => import("./pages/UnityRealTimePage"),
+  bioplex: () => import("./pages/BioplexInventoryPage"),
+};
+const DashboardPage = lazy(routeImporters.dashboard);
+const AssetsPage = lazy(routeImporters.assets);
+const CasesPage = lazy(routeImporters.cases);
+const CustomersPage = lazy(routeImporters.customers);
+const EqasOnlinePage = lazy(routeImporters.eqas);
+const LinearityPage = lazy(routeImporters.linearity);
+const TrainingPage = lazy(routeImporters.training);
+const UnityRealTimePage = lazy(routeImporters.unity);
+const BioplexInventoryPage = lazy(routeImporters.bioplex);
 const BioplexMatchingCheckPage = lazy(() => import("./pages/BioplexMatchingCheckPage"));
 const BioplexMatchingImportsPage = lazy(() => import("./pages/BioplexMatchingImportsPage"));
 const BioplexMatchingImportReviewPage = lazy(() => import("./pages/BioplexMatchingImportReviewPage"));
 const BioplexInventoryFormPage = lazy(() => import("./pages/BioplexInventoryFormPage"));
 const BioplexInventoryDetailsPage = lazy(() => import("./pages/BioplexInventoryDetailsPage"));
+const BioplexInventoryAttentionPage = lazy(() => import("./pages/BioplexInventoryAttentionPage"));
 const BioplexInventoryReportPage = lazy(() => import("./pages/BioplexInventoryReportPage"));
 const BioplexLotExpiryMaintenancePage = lazy(() => import("./pages/BioplexLotExpiryMaintenancePage"));
 const CaseDetailsPage = lazy(() => import("./pages/CaseDetailsPage"));
-const CasesPage = lazy(() => import("./pages/CasesPage"));
 const CustomerFormPage = lazy(() => import("./pages/CustomerFormPage"));
-const CustomersPage = lazy(() => import("./pages/CustomersPage"));
 const CustomerSiteOverviewPage = lazy(() => import("./pages/CustomerSiteOverviewPage"));
-const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const EditAssetPage = lazy(() => import("./pages/EditAssetPage"));
 const EditCasePage = lazy(() => import("./pages/EditCasePage"));
 const EditLinearityPage = lazy(() => import("./pages/EditLinearityPage"));
 const EditTrainingPage = lazy(() => import("./pages/EditTrainingPage"));
-const LinearityPage = lazy(() => import("./pages/LinearityPage"));
 const NewAssetPage = lazy(() => import("./pages/NewAssetPage"));
 const NewCasePage = lazy(() => import("./pages/NewCasePage"));
 const NewLinearityPage = lazy(() => import("./pages/NewLinearityPage"));
 const NewTrainingPage = lazy(() => import("./pages/NewTrainingPage"));
-const TrainingPage = lazy(() => import("./pages/TrainingPage"));
-const UnityRealTimePage = lazy(() => import("./pages/UnityRealTimePage"));
 const NewUnityRealTimePage = lazy(() => import("./pages/NewUnityRealTimePage"));
 const EditUnityRealTimePage = lazy(() => import("./pages/EditUnityRealTimePage"));
-const EqasOnlinePage = lazy(() => import("./pages/EqasOnlinePage"));
 const NewEqasOnlinePage = lazy(() => import("./pages/NewEqasOnlinePage"));
 const EditEqasOnlinePage = lazy(() => import("./pages/EditEqasOnlinePage"));
 
+function PageLoadingFallback() {
+  return (
+    <div className="min-h-[55vh] animate-pulse space-y-5" role="status" aria-label="Loading page">
+      <div className="h-8 w-56 rounded-lg bg-slate-800" />
+      <div className="h-24 rounded-2xl border border-slate-800 bg-slate-900" />
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="h-36 rounded-2xl border border-slate-800 bg-slate-900" />
+        <div className="h-36 rounded-2xl border border-slate-800 bg-slate-900" />
+        <div className="h-36 rounded-2xl border border-slate-800 bg-slate-900" />
+      </div>
+      <span className="sr-only">Loading page...</span>
+    </div>
+  );
+}
 function AppShell({ session, profile }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const canEdit = profile?.role === "editor" || profile?.role === "admin";
+  useEffect(() => scheduleRoutePreloads([
+    ["assets", routeImporters.assets],
+    ["cases", routeImporters.cases],
+    ["customers", routeImporters.customers],
+    ["eqas", routeImporters.eqas],
+    ["linearity", routeImporters.linearity],
+    ["training", routeImporters.training],
+    ["unity", routeImporters.unity],
+  ]), []);
+  function preload(routeKey) {
+    preloadRoute(routeKey, routeImporters[routeKey]).catch(() => {});
+  }
 
   function navClass({ isActive }) {
     return [
@@ -79,39 +118,39 @@ function AppShell({ session, profile }) {
 
   const navigation = (
     <>
-      <NavLink to="/" end className={navClass} onClick={closeMenu}>
+      <NavLink to="/" end className={navClass} onClick={closeMenu} onMouseEnter={() => preload("dashboard")} onFocus={() => preload("dashboard")} onTouchStart={() => preload("dashboard")}>
         <LayoutDashboard size={18} aria-hidden="true" />
         Dashboard
       </NavLink>
-      <NavLink to="/assets" className={navClass} onClick={closeMenu}>
+      <NavLink to="/assets" className={navClass} onClick={closeMenu} onMouseEnter={() => preload("assets")} onFocus={() => preload("assets")} onTouchStart={() => preload("assets")}>
         <MonitorCog size={18} aria-hidden="true" />
         Assets
       </NavLink>
-      <NavLink to="/bioplex-inventory" className={navClass} onClick={closeMenu}>
+      <NavLink to="/bioplex-inventory" className={navClass} onClick={closeMenu} onMouseEnter={() => preload("bioplex")} onFocus={() => preload("bioplex")} onTouchStart={() => preload("bioplex")}>
         <Boxes size={18} aria-hidden="true" />
         BioPlex Management
       </NavLink>
-      <NavLink to="/cases?status=Active" className={navClass} onClick={closeMenu}>
+      <NavLink to="/cases?status=Active" className={navClass} onClick={closeMenu} onMouseEnter={() => preload("cases")} onFocus={() => preload("cases")} onTouchStart={() => preload("cases")}>
         <BriefcaseBusiness size={18} aria-hidden="true" />
         Cases
       </NavLink>
-      <NavLink to="/customers" className={navClass} onClick={closeMenu}>
+      <NavLink to="/customers" className={navClass} onClick={closeMenu} onMouseEnter={() => preload("customers")} onFocus={() => preload("customers")} onTouchStart={() => preload("customers")}>
         <Users size={18} aria-hidden="true" />
         Customers
       </NavLink>
-      <NavLink to="/eqas-online" className={navClass} onClick={closeMenu}>
+      <NavLink to="/eqas-online" className={navClass} onClick={closeMenu} onMouseEnter={() => preload("eqas")} onFocus={() => preload("eqas")} onTouchStart={() => preload("eqas")}>
         <ClipboardList size={18} aria-hidden="true" />
         EQAS Online
       </NavLink>
-      <NavLink to="/linearity" className={navClass} onClick={closeMenu}>
+      <NavLink to="/linearity" className={navClass} onClick={closeMenu} onMouseEnter={() => preload("linearity")} onFocus={() => preload("linearity")} onTouchStart={() => preload("linearity")}>
         <GitCommitHorizontal size={18} aria-hidden="true" />
         Linearity
       </NavLink>
-      <NavLink to="/training" className={navClass} onClick={closeMenu}>
+      <NavLink to="/training" className={navClass} onClick={closeMenu} onMouseEnter={() => preload("training")} onFocus={() => preload("training")} onTouchStart={() => preload("training")}>
         <GraduationCap size={18} aria-hidden="true" />
         Training
       </NavLink>
-      <NavLink to="/unity-real-time" className={navClass} onClick={closeMenu}>
+      <NavLink to="/unity-real-time" className={navClass} onClick={closeMenu} onMouseEnter={() => preload("unity")} onFocus={() => preload("unity")} onTouchStart={() => preload("unity")}>
         <Share2 size={18} aria-hidden="true" />
         Unity Real Time
       </NavLink>
@@ -178,7 +217,7 @@ function AppShell({ session, profile }) {
 
       <main className="p-4 md:ml-60 md:p-6">
         <FlashMessage />
-        <Suspense fallback={<div className="flex min-h-48 items-center justify-center text-slate-400" role="status">Loading page...</div>}>
+        <Suspense fallback={<PageLoadingFallback />}>
           <Routes>
             <Route path="/" element={<DashboardPage canEdit={canEdit} />} />
             <Route path="/cases" element={<CasesPage canEdit={canEdit} />} />
@@ -197,6 +236,7 @@ function AppShell({ session, profile }) {
             <Route path="/assets/:assetId/edit" element={<ProtectedRoute canEdit={canEdit}><EditAssetPage /></ProtectedRoute>} />
             <Route path="/bioplex-inventory" element={<BioplexInventoryPage canEdit={canEdit} profile={profile} />} />
             <Route path="/bioplex-inventory/new" element={<ProtectedRoute canEdit={canEdit}><BioplexInventoryFormPage /></ProtectedRoute>} />
+            <Route path="/bioplex-inventory/attention" element={<BioplexInventoryAttentionPage profile={profile} />} />
             <Route path="/bioplex-inventory/report" element={<BioplexInventoryReportPage />} />
             <Route path="/bioplex-inventory/lot-expiry-maintenance" element={<ProtectedRoute canEdit={profile?.role === "admin"}><BioplexLotExpiryMaintenancePage /></ProtectedRoute>} />
             <Route path="/bioplex-matching-check" element={<BioplexMatchingCheckPage profile={profile} />} />

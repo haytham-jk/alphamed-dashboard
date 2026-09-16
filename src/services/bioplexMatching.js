@@ -116,7 +116,7 @@ export async function findBioplexMatches(lotNumber,materialType="",includeInacti
   const primaryIds=new Set(direct.map((row)=>row.lot_id));
   const relatedIds=new Set(direct.map((row)=>row.related_lot_id).filter(Boolean));
   let query=supabase.from("bioplex_lots").select("id, assay_id, product_id, material_type, lot_number, release_date, expiry_date, is_active, source_import_id, bioplex_products(product_code, product_name)").in("assay_id",assayIds);
-  if(!includeInactive)query=query.eq("is_active",true);
+  if(!includeInactive)query=query.eq("is_active",true).not("expiry_date","is",null).gte("expiry_date",new Date().toISOString().slice(0,10));
   const {data:siblings,error:siblingError}=await query.order("material_type").order("lot_number");
   if(siblingError)throw siblingError;
   const output=[...direct];
@@ -151,11 +151,12 @@ export async function getBioplexImportBlockingRows(importId) {
   return data ?? [];
 }
 
-export async function correctBioplexLotExpiry(lotId, expiryDate, reason) {
+export async function correctBioplexLotExpiry(lotId, expiryDate, reason, expectedUpdatedAt) {
   const { data, error } = await supabase.rpc("correct_bioplex_lot_expiry", {
     p_lot_id: Number(lotId),
     p_expiry_date: expiryDate || null,
     p_reason: String(reason ?? "").trim(),
+    p_expected_updated_at: expectedUpdatedAt || null,
   });
   if (error) throw error;
   return Number(data);

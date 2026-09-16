@@ -119,3 +119,7 @@ export async function deleteUnityRtInstallation(id) {
     .eq("id", Number(id));
   if (error) throw error;
 }
+
+import { normalizeOptions, normalizePage, normalizeUnityQuery } from "../utils/operationalListQuery";
+export async function getUnityRtInstallationsPage(values,{signal}={}) { const q=normalizeUnityQuery(values);const request=supabase.rpc("search_unity_rt_installations",{p_query:q.query||null,p_license_status:q.licenseStatus,p_connectivity:q.connectivity,p_service_pack_status:q.servicePackStatus,p_customer_id:q.customerId||null,p_card_filter:q.cardFilter,p_page:q.page,p_page_size:q.pageSize});if(signal)request.abortSignal(signal);const {data,error}=await request;if(error)throw error;return normalizePage(data,q.page); }
+export async function getUnityRtFilterOptions({signal}={}) { const request=supabase.rpc("get_unity_rt_filter_options");if(signal)request.abortSignal(signal);const {data,error}=await request;if(error)throw error;return normalizeOptions(data); }

@@ -6,7 +6,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   getSupportCaseForEdit,
   resolveSupportCase,
@@ -14,6 +14,7 @@ import {
 import { deleteSupportCase } from "../services/deletions";
 import { formatDateOnly, getDateUrgency } from "../utils/dateDisplay";
 import { getCaseProgress } from "../utils/caseProgress";
+import { buildFocusState, safeReturnPath } from "../utils/returnNavigation";
 import {
   CASE_BADGE_CLASS,
   getCasePriorityClass,
@@ -131,6 +132,9 @@ function ResolveCaseDialog({
 export default function CaseDetailsPage({ canEdit }) {
   const { caseId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const casesReturnTo = safeReturnPath(location.state?.casesReturnTo, "/cases?status=Active", "/cases");
+  const casesReturnState = buildFocusState("focusCaseId", caseId);
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
@@ -192,9 +196,7 @@ export default function CaseDetailsPage({ canEdit }) {
       await resolveSupportCase(caseId, summary);
 
       setResolveDialogOpen(false);
-      navigate("/cases", {
-        state: { message: "Case resolved successfully." },
-      });
+      navigate(casesReturnTo, { state: buildFocusState("focusCaseId", caseId, "Case resolved successfully.") });
     } catch (resolveError) {
       setResolutionError(
         resolveError?.message || "Unable to resolve the case."
@@ -210,9 +212,7 @@ export default function CaseDetailsPage({ canEdit }) {
     try {
       setDeleting(true);
       await deleteSupportCase(caseId);
-      navigate("/cases", {
-        state: { message: "Case deleted successfully." },
-      });
+      navigate(casesReturnTo, { state: { message: "Case deleted successfully." } });
     } catch (deleteError) {
       setError(deleteError?.message || "Unable to delete case.");
     } finally {
@@ -258,7 +258,8 @@ export default function CaseDetailsPage({ canEdit }) {
       />
 
       <Link
-        to="/cases?status=Active"
+        to={casesReturnTo}
+        state={casesReturnState}
         className="-ml-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-slate-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
       >
         <ArrowLeft size={18} aria-hidden="true" />
@@ -297,6 +298,7 @@ export default function CaseDetailsPage({ canEdit }) {
             <>
               <Link
                 to={`/cases/${caseId}/edit`}
+                state={{ casesReturnTo }}
                 className="inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 font-medium"
               >
                 Edit case

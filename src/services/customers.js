@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase";
 import { normalizeCustomerContact } from "../utils/customerDuplicates";
+import { normalizeSimilarCustomerCandidates } from "../utils/customerDuplicateWorkflow";
 import {
   customerMutationError,
   expectedCustomerTimestamp,
@@ -45,7 +46,7 @@ export async function findSimilarCustomers(customerName, emirate, excludeCustome
     p_exclude_customer_id: excludeCustomerId ? Number(excludeCustomerId) : null,
   });
   if (error) throw error;
-  return data ?? [];
+  return normalizeSimilarCustomerCandidates(data);
 }
 export async function saveCustomerWithContacts(customerId, values, { allowSimilarOverride = false, similarCandidates = [] } = {}) {
   const contacts = (values.contacts ?? []).map((contact, index) => {
@@ -124,4 +125,34 @@ export async function getCustomerSiteOverview(customerId) {
     unity: (unityResult.data ?? []).filter((record) => String(record.primary_id ?? "").trim()),
     eqas: (eqasResult.data ?? []).filter((record) => String(record.lab_number ?? "").trim() || String(record.qcnet_id ?? "").trim()),
   };
+}
+
+import {
+  normalizeCustomerFilterOptions,
+  normalizeCustomerListQuery,
+  normalizeCustomerPageResult,
+} from "../utils/customerListQuery";
+
+export async function getCustomersPage(values, { signal } = {}) {
+  const query = normalizeCustomerListQuery(values);
+  const request = supabase.rpc("search_customers", {
+    p_query: query.query || null,
+    p_accreditation: query.accreditation,
+    p_emirate: query.emirate,
+    p_status: query.status,
+    p_page: query.page,
+    p_page_size: query.pageSize,
+  });
+  if (signal) request.abortSignal(signal);
+  const { data, error } = await request;
+  if (error) throw error;
+  return normalizeCustomerPageResult(data, query.page);
+}
+
+export async function getCustomerFilterOptions({ signal } = {}) {
+  const request = supabase.rpc("get_customer_filter_options");
+  if (signal) request.abortSignal(signal);
+  const { data, error } = await request;
+  if (error) throw error;
+  return normalizeCustomerFilterOptions(data);
 }

@@ -79,3 +79,7 @@ export async function deleteEqasOnlineRecord(recordId) {
     .eq("id", Number(recordId));
   if (error) throw error;
 }
+
+import { normalizeEqasQuery, normalizeOptions, normalizePage } from "../utils/operationalListQuery";
+export async function getEqasCustomerGroupsPage(values,{signal}={}) { const q=normalizeEqasQuery(values); const request=supabase.rpc("search_eqas_customer_groups",{p_query:q.query||null,p_customer_id:q.customerId||null,p_page:q.page,p_page_size:q.pageSize}); if(signal) request.abortSignal(signal); const {data,error}=await request;if(error)throw error;return normalizePage(data,q.page); }
+export async function getEqasCustomerFilterOptions({signal}={}) { const request=supabase.rpc("get_eqas_customer_filter_options");if(signal)request.abortSignal(signal);const {data,error}=await request;if(error)throw error;return normalizeOptions(data); }

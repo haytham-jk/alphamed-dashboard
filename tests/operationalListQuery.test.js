@@ -1,0 +1,3 @@
+import test from "node:test";import assert from "node:assert/strict";import{normalizeEqasQuery,normalizeLinearityQuery,normalizePage,normalizeUnityQuery}from"../src/utils/operationalListQuery.js";
+test("operational queries normalize unsafe values",()=>{assert.equal(normalizeLinearityQuery({dueStatus:"bad",page:-1}).dueStatus,"All");assert.equal(normalizeEqasQuery({customerId:"7"}).customerId,7);assert.equal(normalizeUnityQuery({licenseStatus:"bad",pageSize:500}).pageSize,100);});
+test("page response preserves server counts",()=>{const r=normalizePage({rows:[{id:1}],filtered_count:3,total_count:8,page:1,page_count:1});assert.equal(r.filteredCount,3);assert.equal(r.totalCount,8);});

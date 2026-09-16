@@ -106,3 +106,43 @@ export async function getSupportCases({ signal } = {}) {
     };
   });
 }
+
+import {
+  normalizeCaseListQuery,
+  normalizeCasePageResult,
+} from "../utils/caseListQuery";
+
+export async function getSupportCasesPage(values, { signal } = {}) {
+  const query = normalizeCaseListQuery(values);
+  const request = supabase.rpc("search_support_cases", {
+    p_query: query.query || null,
+    p_status: query.status,
+    p_escalated_only: query.escalatedOnly,
+    p_overdue_only: query.overdueOnly,
+    p_sort: query.sort,
+    p_page: query.page,
+    p_page_size: query.pageSize,
+    p_reference_date: query.referenceDate,
+  });
+  if (signal) request.abortSignal(signal);
+  const { data, error } = await request;
+  if (error) throw error;
+  return normalizeCasePageResult(data, query.page);
+}
+
+export async function getDashboardCaseSummary(referenceDate, { signal } = {}) {
+  const request = supabase.rpc("get_dashboard_case_summary", {
+    p_reference_date: referenceDate,
+    p_limit: 10,
+  });
+  if (signal) request.abortSignal(signal);
+  const { data, error } = await request;
+  if (error) throw error;
+  return {
+    active: Math.max(0, Number(data?.active) || 0),
+    overdue: Math.max(0, Number(data?.overdue) || 0),
+    unresolved: Math.max(0, Number(data?.unresolved) || 0),
+    escalated: Math.max(0, Number(data?.escalated) || 0),
+    overdueCases: Array.isArray(data?.overdueCases) ? data.overdueCases : [],
+  };
+}

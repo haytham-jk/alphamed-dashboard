@@ -19,3 +19,78 @@ export async function restoreBioplexCount(id,reason){const {data,error}=await su
 export async function recordBioplexExport(id,type,filename,settings={}){const {data,error}=await supabase.rpc("record_bioplex_export",{p_count_id:Number(id),p_export_type:type,p_filename:filename,p_settings:settings});if(error)throw error;return Number(data);}
 export async function getBioplexProducts(materialType){const {data,error}=await supabase.from("bioplex_products").select("id, assay_id, material_type, product_code, product_name, display_order, bioplex_assays(id, assay_name)").eq("material_type",materialType).eq("is_active",true).order("display_order").order("product_name");if(error)throw error;return data??[];}
 export async function getBioplexCustomerHistory(customerId){const id=Number(customerId);const {data:customer,error:customerError}=await supabase.from("customers").select("id, customer_name, emirate, is_active").eq("id",id).single();if(customerError)throw customerError;const {data:counts,error}=await supabase.from("bioplex_counts").select(COUNT_COLUMNS).eq("customer_id",id).in("status",["Completed","Exported"]).is("deleted_at",null).order("counted_on",{ascending:false});if(error)throw error;const ids=(counts??[]).map((row)=>row.id);let items=[];if(ids.length){const result=await supabase.from("bioplex_count_items").select(ITEM_COLUMNS).in("count_id",ids).order("display_order");if(result.error)throw result.error;items=result.data??[];}const byCount=items.reduce((map,row)=>{const arr=map.get(row.count_id)??[];arr.push(row);map.set(row.count_id,arr);return map;},new Map());return{customer:{id:String(customer.id),name:customer.customer_name,emirate:customer.emirate??""},visits:(counts??[]).map((count)=>({count,items:byCount.get(count.id)??[]}))};}
+
+export async function getDashboardBioplexSummary(referenceDate, { signal } = {}) {
+  const request = supabase.rpc("get_dashboard_bioplex_summary", {
+    p_reference_date: referenceDate,
+  });
+  if (signal) request.abortSignal(signal);
+  const { data, error } = await request;
+  if (error) throw error;
+  return {
+    expired: Math.max(0, Number(data?.expired) || 0),
+    expiring30: Math.max(0, Number(data?.expiring_30) || 0),
+    missingExpiry: Math.max(0, Number(data?.missing_expiry) || 0),
+    draftCounts: Math.max(0, Number(data?.draft_counts) || 0),
+    matchingWarnings: Math.max(0, Number(data?.matching_warnings) || 0),
+    attentionItems: Array.isArray(data?.attention_items) ? data.attention_items : [],
+  };
+}
+
+const ATTENTION_LOT_COLUMNS = "id, assay_id, material_type, lot_number, expiry_date, is_active, updated_at, bioplex_assays(assay_name), bioplex_products(product_name, product_code)";
+const BLOCKING_CODES = ["MISSING_EXPIRY", "INVALID_DATE", "EXPIRED_LOT", "MISSING_CALIBRATOR", "MISSING_REAGENT", "MISSING_COMPATIBLE_KIT"];
+
+async function fetchAttentionPages(buildQuery, pageSize = 500) {
+  const rows = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await buildQuery(from, from + pageSize - 1);
+    if (error) throw error;
+    const page = data ?? [];
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
+export async function getBioplexLotAttention(referenceDate, type) {
+  const date = String(referenceDate ?? "").slice(0, 10);
+  const inThirtyDays = new Date(`${date}T00:00:00Z`);
+  inThirtyDays.setUTCDate(inThirtyDays.getUTCDate() + 30);
+  const endDate = inThirtyDays.toISOString().slice(0, 10);
+  return fetchAttentionPages((from, to) => {
+    let query = supabase.from("bioplex_lots").select(ATTENTION_LOT_COLUMNS).order("expiry_date", { ascending: true, nullsFirst: true }).order("id").range(from, to);
+    if (type === "expired") query = query.lt("expiry_date", date);
+    if (type === "expiring") query = query.gte("expiry_date", date).lte("expiry_date", endDate);
+    if (type === "missing-expiry") query = query.is("expiry_date", null);
+    return query;
+  });
+}
+
+export async function getBioplexMatchingWarningImports() {
+  const imports = await fetchAttentionPages((from, to) => supabase
+    .from("bioplex_matching_imports")
+    .select("id, original_filename, status, created_at, review_version")
+    .in("status", ["Review", "Ready"])
+    .order("created_at", { ascending: false })
+    .range(from, to));
+  if (!imports.length) return [];
+  const importIds = imports.map((item) => item.id);
+  const rows = await fetchAttentionPages((from, to) => supabase
+    .from("bioplex_matching_import_rows")
+    .select("id, import_id, issue_codes, review_status, proposed_action")
+    .in("import_id", importIds)
+    .range(from, to));
+  const byImport = new Map();
+  for (const row of rows) {
+    const issueCodes = Array.isArray(row.issue_codes) ? row.issue_codes : [];
+    const blocking = row.proposed_action === "Review" || ["Pending", "Possible Duplicate", "Conflict", "Invalid"].includes(row.review_status) || issueCodes.some((code) => BLOCKING_CODES.includes(code));
+    if (!blocking) continue;
+    const summary = byImport.get(row.import_id) ?? { count: 0, reasons: new Set() };
+    summary.count += 1;
+    issueCodes.filter((code) => BLOCKING_CODES.includes(code)).forEach((code) => summary.reasons.add(code));
+    byImport.set(row.import_id, summary);
+  }
+  return imports.flatMap((item) => {
+    const summary = byImport.get(item.id);
+    return summary ? [{ ...item, blockingRowCount: summary.count, blockingReasons: [...summary.reasons] }] : [];
+  });
+}

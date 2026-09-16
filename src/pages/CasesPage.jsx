@@ -1,6 +1,6 @@
 import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { ChevronDown, ChevronRight, RefreshCw, Search } from "lucide-react";
 import { getSupportCases } from "../services/cases";
 import {
@@ -24,12 +24,13 @@ function validStatus(value) {
   return STATUS_FILTERS.includes(value) ? value : "Active";
 }
 
-function CaseRow({ record }) {
+function CaseRow({ record, casesReturnTo }) {
   const urgency = getDateUrgency(record.followUpDate);
 
   return (
     <Link
       to={`/cases/${record.databaseId}`}
+      state={{ casesReturnTo, focusCaseId: record.databaseId }}
       className="grid gap-3 border-b border-slate-800 p-5 last:border-0 hover:bg-slate-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-400 lg:grid-cols-[minmax(0,2fr)_minmax(180px,1.2fr)_auto] lg:items-center"
     >
       <div className="min-w-0">
@@ -63,6 +64,7 @@ function CaseRow({ record }) {
 }
 
 export default function CasesPage({ canEdit }) {
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [cases, setCases] = useState([]);
   const [expandedGroups, setExpandedGroups] = useState({});
@@ -220,6 +222,8 @@ export default function CasesPage({ canEdit }) {
     );
   }
 
+  const casesReturnTo = `${location.pathname}${location.search}`;
+
   return (
     <div className="space-y-5">
 
@@ -329,7 +333,7 @@ export default function CasesPage({ canEdit }) {
       {groupBy === "none" ? (
         <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
           {visibleCases.map((record) => (
-            <CaseRow key={record.databaseId} record={record} />
+            <CaseRow key={record.databaseId} record={record} casesReturnTo={casesReturnTo} />
           ))}
         </section>
       ) : (
@@ -376,7 +380,7 @@ export default function CasesPage({ canEdit }) {
 
                   {expanded &&
                     group.records.map((record) => (
-                      <CaseRow key={record.databaseId} record={record} />
+                      <CaseRow key={record.databaseId} record={record} casesReturnTo={casesReturnTo} />
                     ))}
                 </section>
               );
