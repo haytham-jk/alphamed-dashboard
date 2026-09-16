@@ -124,7 +124,7 @@ export default function EditTrainingPage() {
         onClick={(event) => {
           if (!confirmDiscard()) event.preventDefault();
         }}
-        className="inline-flex items-center gap-2 text-sm text-slate-400"
+        className="-ml-2 inline-flex items-center gap-2 rounded-xl px-2 py-1 text-sm text-slate-400 transition-colors hover:bg-slate-900/70 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
       >
         <ArrowLeft size={18} />
         Back to training

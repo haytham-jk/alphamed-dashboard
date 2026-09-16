@@ -17,6 +17,7 @@ import { getDashboardLinearitySummary } from "../services/linearity";
 import { getDashboardBioplexSummary } from "../services/bioplexInventory";
 import useAsyncResource from "../hooks/useAsyncResource";
 import { ErrorState, LoadingState } from "../components/ui/AsyncState";
+import DashboardMetricCard from "../components/ui/DashboardMetricCard";
 import {
   CASE_BADGE_CLASS,
   getCasePriorityClass,
@@ -26,26 +27,6 @@ import { formatRemainingPeriod } from "../utils/linearityDates";
 
 const interactiveCardClass =
   "transition hover:-translate-y-0.5 hover:border-purple-500/70 hover:brightness-125 hover:saturate-110 hover:shadow-[0_0_0_1px_rgba(168,85,247,0.55),0_8px_20px_rgba(88,28,135,0.22)] focus-visible:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950";
-
-function DashboardCard({ to, icon: Icon, label, value, note, tone }) {
-  return (
-    <Link
-      to={to}
-      className={`rounded-2xl border border-slate-800 bg-gradient-to-br from-fuchsia-950/60 via-slate-900 to-blue-950/60 p-5 ${interactiveCardClass}`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm text-slate-400">{label}</p>
-          <p className="mt-2 text-4xl font-semibold text-white">{value}</p>
-          <p className="mt-2 text-sm text-slate-500">{note}</p>
-        </div>
-        <span className={`rounded-xl p-3 ${tone}`}>
-          <Icon size={22} aria-hidden="true" />
-        </span>
-      </div>
-    </Link>
-  );
-}
 
 function QuickViewHeader({
   icon: Icon,
@@ -147,7 +128,7 @@ export default function DashboardPage({ canEdit }) {
       {error && <ErrorState message={error} onRetry={retry} retrying={refreshing} />}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <DashboardCard
+        <DashboardMetricCard
           to="/cases?status=Active"
           icon={Activity}
           label="Active cases"
@@ -155,7 +136,7 @@ export default function DashboardPage({ canEdit }) {
           note="Cases requiring attention"
           tone="bg-blue-950 text-blue-300"
         />
-        <DashboardCard
+        <DashboardMetricCard
           to="/cases?status=Active&overdue=true&sort=followUp"
           icon={Clock}
           label="Overdue"
@@ -163,7 +144,7 @@ export default function DashboardPage({ canEdit }) {
           note="Active cases past follow-up"
           tone="bg-red-950 text-red-300"
         />
-        <DashboardCard
+        <DashboardMetricCard
           to="/cases?status=Unresolved"
           icon={AlertTriangle}
           label="Unresolved"
@@ -171,7 +152,7 @@ export default function DashboardPage({ canEdit }) {
           note="Cases not resolved"
           tone="bg-orange-950 text-orange-300"
         />
-        <DashboardCard
+        <DashboardMetricCard
           to="/cases?status=Escalated"
           icon={ShieldAlert}
           label="Escalated"

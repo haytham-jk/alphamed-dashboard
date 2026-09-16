@@ -1,36 +1,37 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
+  AlertTriangle,
   BarChart3,
   CalendarClock,
+  Clock,
   FilePenLine,
+  HelpCircle,
   Plus,
   RefreshCw,
   RotateCcw,
   SearchCheck,
+  ShieldAlert,
   Trash2,
   Upload,
 } from "lucide-react";
 import {
   deleteBioplexCount,
   getBioplexCounts,
+  getDashboardBioplexSummary,
   restoreBioplexCount,
 } from "../services/bioplexInventory";
 import { formatBioplexDate } from "../utils/bioplexDates";
+import { getLocalDateOnly } from "../utils/dates";
+import DashboardMetricCard from "../components/ui/DashboardMetricCard";
 
-function Metric({ label, value }) {
-  return (
-    <div className="rounded-2xl border border-slate-800 bg-gradient-to-br from-fuchsia-950/60 via-slate-900 to-blue-950/60 p-4">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-semibold">{value}</p>
-    </div>
-  );
-}
+
 
 export default function BioplexInventoryPage({ canEdit, profile }) {
   const isAdmin = profile?.role === "admin";
   const [searchParams, setSearchParams] = useSearchParams();
   const [counts, setCounts] = useState([]);
+  const [summary, setSummary] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
@@ -41,10 +42,12 @@ export default function BioplexInventoryPage({ canEdit, profile }) {
     try {
       setLoading(true);
       setError("");
-      const result = await getBioplexCounts({
-        includeDeleted: isAdmin && showDeleted,
-      });
+      const [result, dashboardSummary] = await Promise.all([
+        getBioplexCounts({ includeDeleted: isAdmin && showDeleted }),
+        getDashboardBioplexSummary(getLocalDateOnly()),
+      ]);
       setCounts(Array.isArray(result) ? result : []);
+      setSummary(dashboardSummary ?? {});
     } catch (loadError) {
       setError(loadError.message || "Unable to load BioPlex inventory.");
     } finally {
@@ -75,7 +78,6 @@ export default function BioplexInventoryPage({ canEdit, profile }) {
       (showDeleted ? Boolean(row.deleted_at) : !row.deleted_at)
   );
 
-  const activeCounts = counts.filter((row) => !row.deleted_at);
 
   async function remove(row) {
     const reason = window.prompt("Enter the deletion reason:");
@@ -126,11 +128,12 @@ export default function BioplexInventoryPage({ canEdit, profile }) {
         </div>
       )}
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric label="Active counts" value={activeCounts.length} />
-        <Metric label="Draft" value={activeCounts.filter((row) => row.status === "Draft").length} />
-        <Metric label="Completed" value={activeCounts.filter((row) => row.status === "Completed").length} />
-        <Metric label="Exported" value={activeCounts.filter((row) => row.status === "Exported").length} />
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <DashboardMetricCard to="/bioplex-inventory/attention?type=expired" icon={ShieldAlert} label="Expired lots" value={summary.expired ?? 0} note="Requires immediate review" tone="bg-red-950 text-red-300" />
+        <DashboardMetricCard to="/bioplex-inventory/attention?type=expiring" icon={Clock} label="Expiring in 30 days" value={summary.expiring30 ?? 0} note="Upcoming lot expiry" tone="bg-amber-950 text-amber-300" />
+        <DashboardMetricCard to="/bioplex-inventory/attention?type=missing-expiry" icon={HelpCircle} label="Missing expiry" value={summary.missingExpiry ?? 0} note="Expiry date not recorded" tone="bg-orange-950 text-orange-300" />
+        <DashboardMetricCard to="/bioplex-inventory?status=Draft" icon={FilePenLine} label="Draft counts" value={summary.draftCounts ?? 0} note="Counts not completed" tone="bg-blue-950 text-blue-300" />
+        <DashboardMetricCard to="/bioplex-inventory/attention?type=matching-warnings" icon={AlertTriangle} label="Matching warnings" value={summary.matchingWarnings ?? 0} note="Matching review required" tone="bg-violet-950 text-violet-300" />
       </section>
 
       <section className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-4 md:grid-cols-[minmax(16rem,1fr)_minmax(13rem,16rem)_auto] md:items-end">

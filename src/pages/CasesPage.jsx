@@ -1,15 +1,27 @@
 import SelectInput from "../components/ui/SelectInput";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { ChevronDown, ChevronRight, RefreshCw, Search } from "lucide-react";
-import { getSupportCases } from "../services/cases";
+import {
+  Activity,
+  AlertTriangle,
+  BriefcaseBusiness,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  RefreshCw,
+  Search,
+  ShieldAlert,
+} from "lucide-react";
+import { getDashboardCaseSummary, getSupportCases } from "../services/cases";
 import {
   ACTIVE_CASE_STATUSES,
   CASE_PRIORITIES,
   CASE_STATUSES,
 } from "../constants/caseOptions";
 import { getDateUrgency } from "../utils/dateDisplay";
+import { getLocalDateOnly } from "../utils/dates";
 import PaginationControls from "../components/ui/PaginationControls";
+import DashboardMetricCard from "../components/ui/DashboardMetricCard";
 import { CASE_BADGE_CLASS, CASE_PRIORITY_COLORS, getCaseStatusClass } from "../constants/caseDisplay";
 const PAGE_SIZE = 20;
 const STATUS_FILTERS = ["All", "Active", ...CASE_STATUSES];
@@ -67,6 +79,7 @@ export default function CasesPage({ canEdit }) {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [cases, setCases] = useState([]);
+  const [summary, setSummary] = useState({});
   const [expandedGroups, setExpandedGroups] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -105,8 +118,14 @@ export default function CasesPage({ canEdit }) {
     setLoading(true);
     setError("");
 
-    getSupportCases()
-      .then(setCases)
+    Promise.all([
+      getSupportCases(),
+      getDashboardCaseSummary(getLocalDateOnly()),
+    ])
+      .then(([caseRows, caseSummary]) => {
+        setCases(Array.isArray(caseRows) ? caseRows : []);
+        setSummary(caseSummary ?? {});
+      })
       .catch((loadError) =>
         setError(loadError?.message || "Unable to load cases.")
       )
@@ -252,6 +271,40 @@ export default function CasesPage({ canEdit }) {
         </div>
       </header>
 
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <DashboardMetricCard
+          to="/cases?status=Active"
+          icon={Activity}
+          label="Active cases"
+          value={summary.active ?? 0}
+          note="Cases requiring attention"
+          tone="bg-blue-950 text-blue-300"
+        />
+        <DashboardMetricCard
+          to="/cases?status=Active&overdue=true&sort=followUp"
+          icon={Clock}
+          label="Overdue"
+          value={summary.overdue ?? 0}
+          note="Active cases past follow-up"
+          tone="bg-red-950 text-red-300"
+        />
+        <DashboardMetricCard
+          to="/cases?status=Unresolved"
+          icon={AlertTriangle}
+          label="Unresolved"
+          value={summary.unresolved ?? 0}
+          note="Cases not resolved"
+          tone="bg-orange-950 text-orange-300"
+        />
+        <DashboardMetricCard
+          to="/cases?status=Escalated"
+          icon={ShieldAlert}
+          label="Escalated"
+          value={summary.escalated ?? 0}
+          note="Cases with Escalated status"
+          tone="bg-red-950 text-red-300"
+        />
+      </section>
       <section className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-4 xl:grid-cols-[minmax(280px,1fr)_170px_180px_190px]">
         <label>
           <span className="mb-2 block text-sm font-medium">Search cases</span>
@@ -311,8 +364,11 @@ export default function CasesPage({ canEdit }) {
         </label>
       </section>
 
-      <p className="text-sm text-slate-500" aria-live="polite">
-        Showing {visibleCases.length} of {filteredCases.length} matching cases
+      <p className="flex items-center gap-2 text-sm text-slate-400" aria-live="polite">
+        <BriefcaseBusiness size={17} aria-hidden="true" />
+        Showing <strong className="text-slate-200">{visibleCases.length}</strong> of{" "}
+        <strong className="text-slate-200">{filteredCases.length}</strong> matching cases,{" "}
+        <strong className="text-slate-200">{cases.length}</strong> total
       </p>
 
       {error && (
