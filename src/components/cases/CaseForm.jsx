@@ -1,6 +1,6 @@
 import { handleInvalidCapture } from "../../utils/formFocus";
 import SelectInput from "../ui/SelectInput";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../ui/button";
 import DatePickerInput from "../ui/DatePickerInput";
@@ -16,6 +16,35 @@ import {
 } from "../../constants/caseOptions";
 import { normalizeCaseFormValues } from "../../utils/caseFormHelpers";
 import { validateCase } from "../../utils/caseValidation";
+import { getInstrumentsForCustomers } from "../../services/assets";
+import { isExpectedAbortError } from "../../utils/requestErrors";
+
+const INSTRUMENT_MATCHERS = [
+  ["d100", /\bd\s*100\b/],
+  ["d10", /\bd\s*10\b/],
+  ["variant turbo", /\bvariant\s+turbo\b/],
+  ["variant ii", /\bvariant\s+(?:ii|2)\b/],
+  ["bioplex", /\bbio\s*plex\b/],
+  ["geenius", /\bgeenius\b/],
+  ["1wa", /\b1\s*wa\b/],
+];
+
+function normalizeInstrumentLabel(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function getInstrumentFamily(value) {
+  const normalized = normalizeInstrumentLabel(value);
+  return INSTRUMENT_MATCHERS.find(([, pattern]) => pattern.test(normalized))?.[0] || "";
+}
+
+function sourceMatchesInstrument(source, instrumentName) {
+  const sourceFamily = getInstrumentFamily(source);
+  return Boolean(sourceFamily) && sourceFamily === getInstrumentFamily(instrumentName);
+}
 
 const escalationOptions = [
   "",
@@ -55,19 +84,77 @@ export default function CaseForm({
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [instruments, setInstruments] = useState([]);
+  const [instrumentError, setInstrumentError] = useState("");
+  const [pendingInstrumentId, setPendingInstrumentId] = useState("");
 
   useEffect(() => {
     setValues(initialValues);
   }, [initialValues]);
 
+  const patch = useCallback((changes) => {
+    setValues((current) => ({ ...current, ...changes }));
+    onDirtyChange?.(true);
+  }, [onDirtyChange]);
+
   const showResolution = useMemo(
     () => TERMINAL_CASE_STATUSES.includes(values.status),
     [values.status]
   );
-
-  function patch(changes) {
-    setValues((current) => ({ ...current, ...changes }));
-    onDirtyChange?.(true);
+  const selectedCustomerIds = useMemo(() => (values.customerIds || []).map(Number).filter(Number.isFinite), [values.customerIds]);
+  const relevantInstruments = useMemo(() => {
+    const selectedSources = values.source || [];
+    return instruments.filter((item) =>
+      selectedSources.some((source) =>
+        sourceMatchesInstrument(source, item.instrument_name)
+      )
+    );
+  }, [instruments, values.source]);
+  const selectedInstrumentIds = useMemo(
+    () => [...new Set((values.instrumentIds || []).map(String).filter(Boolean))],
+    [values.instrumentIds]
+  );
+  const selectedInstruments = useMemo(
+    () => selectedInstrumentIds
+      .map((instrumentId) => instruments.find((item) => String(item.id) === instrumentId))
+      .filter(Boolean),
+    [instruments, selectedInstrumentIds]
+  );
+  const availableInstruments = useMemo(
+    () => relevantInstruments.filter((item) => !selectedInstrumentIds.includes(String(item.id))),
+    [relevantInstruments, selectedInstrumentIds]
+  );
+  useEffect(() => {
+    const controller = new AbortController();
+    if (values.internalCase || selectedCustomerIds.length === 0) {
+      setInstruments([]);
+      if (selectedInstrumentIds.length > 0) patch({ instrumentIds: [] });
+      setPendingInstrumentId("");
+      return () => controller.abort();
+    }
+    getInstrumentsForCustomers(selectedCustomerIds, { signal: controller.signal })
+      .then((rows) => { setInstruments(rows); setInstrumentError(""); })
+      .catch((loadError) => { if (!isExpectedAbortError(loadError)) setInstrumentError(loadError?.message || "Unable to load customer instruments."); });
+    return () => controller.abort();
+  }, [patch, selectedCustomerIds, selectedInstrumentIds.length, values.internalCase]);
+  useEffect(() => {
+    if (selectedInstrumentIds.length === 0 || instruments.length === 0) return;
+    const validIds = selectedInstrumentIds.filter((instrumentId) =>
+      relevantInstruments.some((item) => String(item.id) === instrumentId)
+    );
+    if (validIds.length !== selectedInstrumentIds.length) {
+      patch({ instrumentIds: validIds });
+      setPendingInstrumentId("");
+    }
+  }, [instruments.length, patch, relevantInstruments, selectedInstrumentIds]);
+  function addInstrument() {
+    const instrumentId = String(pendingInstrumentId || "");
+    if (!instrumentId || selectedInstrumentIds.includes(instrumentId)) return;
+    patch({ instrumentIds: [...selectedInstrumentIds, instrumentId] });
+    setPendingInstrumentId("");
+  }
+  function removeInstrument(instrumentId) {
+    patch({ instrumentIds: selectedInstrumentIds.filter((id) => id !== String(instrumentId)) });
   }
 
   async function handleSubmit(event) {
@@ -214,6 +301,39 @@ export default function CaseForm({
             value={values.source}
             onChange={(source) => patch({ source })}
           />
+          {relevantInstruments.length > 0 && (
+            <div className="space-y-3 pb-4" data-field-key="instrumentIds">
+              <span className="block text-sm font-medium">Related instruments (optional)</span>
+              {selectedInstruments.length > 0 && (
+                <div className="grid gap-2 md:grid-cols-2">
+                  {selectedInstruments.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between gap-3 rounded-xl border border-blue-900 bg-blue-950/25 p-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-slate-100">{item.customers?.customer_name || "Customer"}</p>
+                        <p className="truncate text-sm text-slate-400">{item.instrument_name} · SN: {item.serial_number || "Not recorded"}</p>
+                      </div>
+                      <button type="button" onClick={() => removeInstrument(item.id)} className="shrink-0 rounded-lg border border-red-900 px-2.5 py-1.5 text-xs text-red-300 hover:bg-red-950">Remove</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {availableInstruments.length > 0 && (
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <SelectInput className={inputClass} value={pendingInstrumentId} onChange={(event) => setPendingInstrumentId(event.target.value)}>
+                    <option value="">Select another instrument</option>
+                    {availableInstruments.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.customers?.customer_name ? `${item.customers.customer_name} · ` : ""}{item.instrument_name} · SN: {item.serial_number || "Not recorded"}{item.is_active ? "" : " · Inactive"}
+                      </option>
+                    ))}
+                  </SelectInput>
+                  <button type="button" onClick={addInstrument} disabled={!pendingInstrumentId} className="h-9 self-start whitespace-nowrap rounded-lg border border-blue-700 px-3 text-sm font-medium text-blue-200 hover:bg-blue-950 disabled:cursor-not-allowed disabled:opacity-50 sm:self-center">Add instrument</button>
+                </div>
+              )}
+              {instrumentError && <p className="text-sm text-red-300" role="alert">{instrumentError}</p>}
+              {selectedInstruments.length > 0 && availableInstruments.length === 0 && <p className="text-xs text-slate-500">All matching instruments are selected.</p>}
+            </div>
+          )}
 
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Reported by">
@@ -257,6 +377,7 @@ export default function CaseForm({
         </div>
       </CaseFormSection>
 
+      {!showResolution && (
       <CaseFormSection
         title="Follow-up"
         description="Record the next action, waiting party, and target dates."
@@ -298,6 +419,11 @@ export default function CaseForm({
           </Field>
         </div>
       </CaseFormSection>
+      )}
+
+      {showResolution && (
+        <div className="rounded-2xl border border-emerald-900/70 bg-emerald-950/25 p-4 text-sm text-emerald-200">No follow-up required for terminal cases.</div>
+      )}
 
       {showResolution && (
         <CaseFormSection

@@ -38,10 +38,11 @@ function friendlyMutationError(error) {
 
 export async function createSupportCase(values) {
   const normalized = normalizeRpcValues(values);
-  const { data, error } = await supabase.rpc("create_support_case_atomic", {
+  const { data, error } = await supabase.rpc("create_support_case_atomic_v3", {
     p_values: normalized.values,
     p_customer_ids: normalized.customerIds,
     p_primary_customer_id: normalized.primaryCustomerId,
+    p_instrument_ids: (values.instrumentIds || []).map(Number).filter(Number.isFinite),
   });
 
   if (error) throw friendlyMutationError(error);
@@ -52,12 +53,13 @@ export async function createSupportCase(values) {
 
 export async function updateSupportCase(caseId, values) {
   const normalized = normalizeRpcValues(values);
-  const { error } = await supabase.rpc("update_support_case_atomic", {
+  const { error } = await supabase.rpc("update_support_case_atomic_v3", {
     p_case_id: Number(caseId),
     p_values: normalized.values,
     p_customer_ids: normalized.customerIds,
     p_primary_customer_id: normalized.primaryCustomerId,
     p_expected_updated_at: expectedCaseTimestamp(values.expectedUpdatedAt),
+    p_instrument_ids: (values.instrumentIds || []).map(Number).filter(Number.isFinite),
   });
 
   if (error) throw friendlyMutationError(error);
@@ -102,6 +104,20 @@ export async function getSupportCaseForEdit(caseId) {
       last_case_update,
       resolved_date,
       resolution_summary,
+      case_instruments (
+        instrument_id,
+        instruments (
+          id,
+          customer_id,
+          instrument_name,
+          serial_number,
+          is_active,
+          customers (
+            id,
+            customer_name
+          )
+        )
+      ),
       case_customers (
         customer_id,
         is_primary,

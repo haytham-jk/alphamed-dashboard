@@ -216,7 +216,7 @@ export default function CaseCustomerSelector({
                   key={customerId}
                   type="button"
                   onClick={() => addCustomer(customerId)}
-                  className="flex w-full items-center justify-between gap-4 rounded-xl border border-slate-800 bg-slate-950 p-3 text-left hover:border-blue-800 hover:bg-blue-950/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                  className="flex w-full items-center justify-between gap-4 rounded-xl border border-slate-800 bg-slate-950 p-3 text-left transition-colors hover:border-blue-800 hover:bg-blue-950/30 focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-400"
                 >
                   <span className="min-w-0">
                     <span className="block truncate font-medium">{customer.name}</span>

@@ -26,6 +26,19 @@ export async function getSupportCases({ signal } = {}) {
       last_case_update,
       resolved_date,
       resolution_summary,
+      case_instruments (
+        instrument_id,
+        instruments (
+          id,
+          customer_id,
+          instrument_name,
+          serial_number,
+          customers (
+            id,
+            customer_name
+          )
+        )
+      ),
       case_customers (
         customer_id,
         is_primary,
@@ -103,6 +116,8 @@ export async function getSupportCases({ signal } = {}) {
       lastUpdate: row.last_case_update ?? null,
       resolved: row.resolved_date ?? "",
       resolutionSummary: row.resolution_summary ?? "",
+      instruments: (row.case_instruments || []).map((link) => link.instruments).filter(Boolean),
+      instrumentIds: (row.case_instruments || []).map((link) => link.instrument_id).filter(Boolean),
     };
   });
 }

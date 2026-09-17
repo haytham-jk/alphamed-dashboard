@@ -88,6 +88,7 @@ export default function CasesPage({ canEdit }) {
   const status = validStatus(searchParams.get("status") || "Active");
   const escalatedOnly = searchParams.get("escalated") === "true";
   const overdueOnly = searchParams.get("overdue") === "true";
+  const assetId = searchParams.get("asset") || "";
   const sort = searchParams.get("sort") || "priority";
   const groupBy =
     searchParams.get("group") === "priority" ? "priority" : "none";
@@ -172,7 +173,8 @@ export default function CasesPage({ canEdit }) {
           escalationTarget !== "" &&
           escalationTarget !== "None");
 
-      return matchesSearch && matchesStatus && matchesEscalation && matchesOverdue;
+      const matchesAsset = !assetId || (record.instrumentIds || []).some((instrumentId) => String(instrumentId) === assetId);
+      return matchesSearch && matchesStatus && matchesEscalation && matchesOverdue && matchesAsset;
     });
 
     return [...result].sort((first, second) => {
@@ -206,7 +208,7 @@ export default function CasesPage({ canEdit }) {
         (priorityRank[second.priority] ?? 99)
       );
     });
-  }, [cases, escalatedOnly, overdueOnly, query, sort, status]);
+  }, [assetId, cases, escalatedOnly, overdueOnly, query, sort, status]);
 
   const pageCount = Math.max(1, Math.ceil(filteredCases.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);

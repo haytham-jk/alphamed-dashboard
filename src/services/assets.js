@@ -18,15 +18,41 @@ const assetSelection = `
 `;
 
 export async function getAssets({ signal } = {}) {
-  const { data, error } = await supabase
+  let assetsRequest = supabase
     .from("instruments")
     .select(assetSelection)
     .order("instrument_name")
-    .order("serial_number")
-    .abortSignal(signal);
+    .order("serial_number");
+  let linksRequest = supabase
+    .from("case_instruments")
+    .select("support_case_id, instrument_id");
 
-  if (error) throw error;
-  return data ?? [];
+  if (signal) {
+    assetsRequest = assetsRequest.abortSignal(signal);
+    linksRequest = linksRequest.abortSignal(signal);
+  }
+
+  const [assetsResult, linksResult] = await Promise.all([
+    assetsRequest,
+    linksRequest,
+  ]);
+
+  if (assetsResult.error) throw assetsResult.error;
+  if (linksResult.error) throw linksResult.error;
+
+  const relatedCaseCounts = new Map();
+  for (const link of linksResult.data ?? []) {
+    const instrumentId = Number(link.instrument_id);
+    relatedCaseCounts.set(
+      instrumentId,
+      (relatedCaseCounts.get(instrumentId) ?? 0) + 1
+    );
+  }
+
+  return (assetsResult.data ?? []).map((asset) => ({
+    ...asset,
+    related_case_count: relatedCaseCounts.get(Number(asset.id)) ?? 0,
+  }));
 }
 
 export async function getAsset(assetId, { signal } = {}) {
@@ -92,4 +118,19 @@ export async function updateAsset(assetId, values) {
     p_expected_updated_at: expectedUpdateTimestamp(values.expectedUpdatedAt, "asset"),
   });
   if (error) throw assetMutationError(error);
+}
+
+export async function getInstrumentsForCustomers(customerIds, { signal } = {}) {
+  const ids = [...new Set((customerIds || []).map(Number).filter(Number.isFinite))];
+  if (ids.length === 0) return [];
+  let request = supabase
+    .from("instruments")
+    .select("id, customer_id, instrument_name, serial_number, is_active, customers(id, customer_name)")
+    .in("customer_id", ids)
+    .order("instrument_name")
+    .order("serial_number");
+  if (signal) request = request.abortSignal(signal);
+  const { data, error } = await request;
+  if (error) throw error;
+  return data || [];
 }

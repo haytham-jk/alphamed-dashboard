@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
+  CalendarDays,
   CheckCircle2,
   RefreshCw,
+  Target,
   Trash2,
   X,
 } from "lucide-react";
@@ -359,57 +361,119 @@ export default function CaseDetailsPage({ canEdit }) {
         </div>
       )}
 
-      <section className="grid gap-5 rounded-2xl border border-slate-800 bg-slate-900 p-5 md:grid-cols-2">
-        <Detail label="Customers">
-          {customers.join(", ") || "Internal / No customer"}
-        </Detail>
-        <Detail label="Status">
-          <span className={`${CASE_BADGE_CLASS} ${getCaseStatusClass(record.status)}`}>
-            {record.status}
-          </span>
-        </Detail>
-        <Detail label="Priority">
-          <span
-            className={`${CASE_BADGE_CLASS} ${getCasePriorityClass(
-              record.priority
-            )}`}
-          >
-            {record.priority}
-          </span>
-        </Detail>
-        <Detail label="Created date">
-          {formatDateOnly(record.case_created_on)}
-        </Detail>
-        <Detail label="Follow-up">
-          <span className={`${CASE_BADGE_CLASS} ${followUp.className}`}>
-            {followUp.label}
-          </span>
-        </Detail>
-        <Detail label="Target resolution">
-          {formatDateOnly(record.target_resolution_date)}
-        </Detail>
-        <Detail label="Resolved date">
-          {formatDateOnly(record.resolved_date)}
-        </Detail>
-        <Detail label="Request type">{record.request_type}</Detail>
-        <Detail label="Source">{(record.source || []).join(", ")}</Detail>
-        <Detail label="Reported by">{record.reported_by}</Detail>
-        <Detail label="Escalated to">{record.escalated_to}</Detail>
-        <Detail label="Case number">{record.case_number}</Detail>
-        <Detail label="Waiting on">{record.waiting_on}</Detail>
-        <Detail label="Next action" wide>
-          {record.next_action}
-        </Detail>
-        <Detail label="Related issues" wide>
-          {record.related_issues}
-        </Detail>
-        <Detail label="Issue description" wide>
-          {record.issue_description}
-        </Detail>
-        <Detail label="Resolution summary" wide>
-          {record.resolution_summary}
-        </Detail>
+      <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+        <div className="mb-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400">Case overview</p>
+          <h2 className="mt-1 text-xl font-semibold text-white">Customers and current state</h2>
+        </div>
+
+        <div className="space-y-5">
+          <div>
+            <p className="mb-2 text-xs uppercase tracking-wide text-slate-500">Customers</p>
+            {customers.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {customers.map((customer) => (
+                  <span key={customer} className="inline-flex rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm font-medium text-slate-100">
+                    {customer}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span className="inline-flex rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-400">Internal / No customer</span>
+            )}
+          </div>
+
+          <div className="grid gap-x-8 gap-y-5 sm:grid-cols-3">
+            <Detail label="Status">
+              <span className={`${CASE_BADGE_CLASS} ${getCaseStatusClass(record.status)}`}>{record.status}</span>
+            </Detail>
+            <Detail label="Priority">
+              <span className={`${CASE_BADGE_CLASS} ${getCasePriorityClass(record.priority)}`}>{record.priority}</span>
+            </Detail>
+            <Detail label="Follow-up">
+              <span className={`${CASE_BADGE_CLASS} ${isTerminal ? "border-emerald-900 bg-emerald-950 text-emerald-300" : followUp.className}`}>
+                {isTerminal ? "No follow-up required" : followUp.label}
+              </span>
+            </Detail>
+          </div>
+          <div className="grid gap-4 border-t border-slate-800 pt-5 md:grid-cols-3">
+            <div className="flex items-center gap-3">
+              <span className="rounded-lg bg-blue-950 p-2 text-blue-300"><CalendarDays size={18} aria-hidden="true" /></span>
+              <div><p className="text-xs uppercase tracking-wide text-slate-500">Created date</p><p className="mt-1 font-medium text-slate-100">{formatDateOnly(record.case_created_on)}</p></div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="rounded-lg bg-amber-950 p-2 text-amber-300"><Target size={18} aria-hidden="true" /></span>
+              <div><p className="text-xs uppercase tracking-wide text-slate-500">Target resolution</p><p className="mt-1 font-medium text-slate-100">{formatDateOnly(record.target_resolution_date)}</p></div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="rounded-lg bg-emerald-950 p-2 text-emerald-300"><CheckCircle2 size={18} aria-hidden="true" /></span>
+              <div><p className="text-xs uppercase tracking-wide text-slate-500">Resolved date</p><p className="mt-1 font-medium text-slate-100">{formatDateOnly(record.resolved_date)}</p></div>
+            </div>
+          </div>
+        </div>
       </section>
+
+      <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+        <div className="mb-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400">Equipment</p>
+          <h2 className="mt-1 text-xl font-semibold text-white">Related instruments</h2>
+        </div>
+        {(record.case_instruments || []).length > 0 ? (
+          <div className="space-y-2">
+            {(record.case_instruments || []).map((link) => {
+              const instrument = link.instruments;
+              if (!instrument) return null;
+              return (
+                <Link key={instrument.id} to={`/assets/${instrument.id}/edit`} className="flex w-full flex-col gap-1 rounded-xl border border-blue-900 bg-blue-950/30 px-4 py-3 text-blue-100 transition-colors hover:border-blue-600 hover:bg-blue-950/50 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="font-medium">{instrument.customers?.customer_name || "Customer not recorded"}</span>
+                  <span className="text-sm text-blue-200">{instrument.instrument_name} · SN: {instrument.serial_number || "Not recorded"}</span>
+                </Link>
+              );
+            })}
+          </div>
+        ) : <p className="text-slate-500">No related instruments.</p>}
+      </section>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+          <div className="mb-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-400">Classification</p>
+            <h2 className="mt-1 text-xl font-semibold text-white">Request and escalation</h2>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Detail label="Request type">{record.request_type}</Detail>
+            <Detail label="Source">{(record.source || []).join(", ")}</Detail>
+            <Detail label="Reported by">{record.reported_by}</Detail>
+            <Detail label="Escalated to">{record.escalated_to}</Detail>
+            <Detail label="Case number">{record.case_number}</Detail>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+          <div className="mb-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-400">Actions</p>
+            <h2 className="mt-1 text-xl font-semibold text-white">Follow-up and next steps</h2>
+          </div>
+          <div className="space-y-5">
+            <Detail label="Waiting on">{isTerminal ? "No follow-up required" : record.waiting_on}</Detail>
+            <Detail label="Next action">{isTerminal ? "No follow-up required" : record.next_action}</Detail>
+            <Detail label="Related issues">{record.related_issues}</Detail>
+          </div>
+        </section>
+      </div>
+
+      <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+        <div className="mb-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-400">Case narrative</p>
+          <h2 className="mt-1 text-xl font-semibold text-white">Issue and outcome</h2>
+        </div>
+        <div className="space-y-6">
+          <Detail label="Issue description">{record.issue_description}</Detail>
+          {isTerminal && <div className="border-t border-slate-800 pt-5"><Detail label="Resolution summary">{record.resolution_summary}</Detail></div>}
+        </div>
+      </section>
+
+
     </div>
   );
 }

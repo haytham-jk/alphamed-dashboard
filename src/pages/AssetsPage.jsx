@@ -5,10 +5,12 @@ import {
   ChevronDown,
   ChevronRight,
   Copy,
+  Download,
   Plus,
   Search,
 } from "lucide-react";
 import { getAssets } from "../services/assets";
+import { downloadCsv, formatCsvDate } from "../utils/csvExport";
 import useAsyncResource from "../hooks/useAsyncResource";
 import { ErrorState, LoadingState } from "../components/ui/AsyncState";
 
@@ -123,6 +125,8 @@ export default function AssetsPage({ canEdit }) {
           </h1>
         </div>
 
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => downloadCsv("assets.csv", ["Site Name", "Instrument", "Serial Number", "Installation Date"], filteredAssets.map((asset) => [asset.customers?.customer_name || "", asset.instrument_name || "", asset.serial_number || "", formatCsvDate(asset.installation_date)]))} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 px-4 py-2 text-slate-200"><Download size={18} />Export CSV</button>
         {canEdit && (
           <Link
             to="/assets/new"
@@ -132,6 +136,7 @@ export default function AssetsPage({ canEdit }) {
             New asset
           </Link>
         )}
+        </div>
       </div>
 
       <section className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-4 md:grid-cols-[1fr_220px]">
@@ -275,6 +280,14 @@ export default function AssetsPage({ canEdit }) {
                                     </span>
                                   )}
                                 </span>
+                              </Link>
+                              <Link to={`/cases?asset=${asset.id}&status=All`} className="mx-4 mb-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-700 px-2 py-1 text-xs text-blue-300 hover:border-blue-600 hover:bg-blue-950/40">
+                                Related cases
+                                {asset.related_case_count > 0 && (
+                                  <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-blue-900 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-blue-100">
+                                    {asset.related_case_count}
+                                  </span>
+                                )}
                               </Link>
                             </td>
 

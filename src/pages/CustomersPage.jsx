@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { Plus, Search, Users } from "lucide-react";
+import { Download, Plus, Search, Users } from "lucide-react";
 import SelectInput from "../components/ui/SelectInput";
 import PaginationControls from "../components/ui/PaginationControls";
 import { EMIRATES } from "../constants/locationOptions";
-import { getCustomerFilterOptions, getCustomersPage } from "../services/customers";
+import { getCustomerContactsForCsv, getCustomerFilterOptions, getCustomersPage } from "../services/customers";
+import { downloadCsv } from "../utils/csvExport";
+import { isExpectedAbortError } from "../utils/requestErrors";
 
 const PAGE_SIZE = 20;
 const ACCREDITATION_FILTERS = ["All", "ISO/EIAC", "CAP", "Both"];
@@ -42,7 +44,7 @@ export default function CustomersPage({ canEdit }) {
     getCustomerFilterOptions({ signal: controller.signal })
       .then(setStoredEmirates)
       .catch((loadError) => {
-        if (loadError?.name !== "AbortError") setError(loadError?.message || "Unable to load customer filters.");
+        if (!isExpectedAbortError(loadError)) setError(loadError?.message || "Unable to load customer filters.");
       });
     return () => controller.abort();
   }, []);
@@ -57,7 +59,7 @@ export default function CustomersPage({ canEdit }) {
         setResult(next);
         if (next.page !== page) updateFilter("page", next.page);
       } catch (loadError) {
-        if (loadError?.name !== "AbortError") setError(loadError?.message || "Unable to load customers.");
+        if (!isExpectedAbortError(loadError)) setError(loadError?.message || "Unable to load customers.");
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
@@ -88,7 +90,7 @@ export default function CustomersPage({ canEdit }) {
   const returnTo = `/customers${parameterText ? `?${parameterText}` : ""}`;
 
   return <div className="space-y-5">
-    <header className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-sm text-blue-400">Reference data</p><h1 className="text-3xl font-semibold">Customers</h1></div>{canEdit && <Link to="/customers/new" state={{ customersReturnTo: returnTo }} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 font-medium"><Plus size={18}/>New customer</Link>}</header>
+    <header className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-sm text-blue-400">Reference data</p><h1 className="text-3xl font-semibold">Customers</h1></div><div className="flex flex-wrap gap-2"><button type="button" onClick={async () => { try { const rows = await getCustomerContactsForCsv(); downloadCsv("customer-contacts.csv", ["Name", "Email", "Phone Number", "Lab or Organization"], rows.map((item) => [item.name || "", item.email || "", item.phone_number || "", item.customers?.customer_name || ""])); } catch (exportError) { setError(exportError?.message || "Unable to export customer contacts."); } }} className="inline-flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-2"><Download size={18}/>Export CSV</button>{canEdit && <Link to="/customers/new" state={{ customersReturnTo: returnTo }} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 font-medium"><Plus size={18}/>New customer</Link>}</div></header>
     <section className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-4 md:grid-cols-2 xl:grid-cols-[minmax(18rem,1fr)_13rem_13rem_12rem]">
       <label><span className="mb-2 block text-sm font-medium">Search customers</span><div className="relative"><Search className="absolute left-3 top-3 text-slate-500" size={17}/><input type="search" value={query} onChange={(event) => updateFilter("q", event.target.value)} placeholder="Customer, accreditation, or contact..." className="w-full rounded-xl border border-slate-700 bg-slate-950 py-2 pl-10 pr-3"/></div></label>
       <label><span className="mb-2 block text-sm font-medium">Accreditation</span><SelectInput value={accreditationFilter} onChange={(event) => updateFilter("accreditation", event.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2">{ACCREDITATION_FILTERS.map((option) => <option key={option}>{option}</option>)}</SelectInput></label>

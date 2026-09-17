@@ -156,3 +156,9 @@ export async function getCustomerFilterOptions({ signal } = {}) {
   if (error) throw error;
   return normalizeCustomerFilterOptions(data);
 }
+
+export async function getCustomerContactsForCsv() {
+  const { data, error } = await supabase.from("customer_contacts").select("name, email, phone_number, customers(customer_name)").order("name");
+  if (error) throw error;
+  return data || [];
+}

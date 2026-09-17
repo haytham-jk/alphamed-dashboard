@@ -1,6 +1,6 @@
 # Alphamed Operations Hub
 
-**Current application version:** `2.4.4`
+**Current application version:** `2.5.0`
 
 Alphamed Operations Hub is a React and Supabase application for clinical support operations, Customer sites, installed Assets, Training, Linearity, Unity Real Time, EQAS Online, and BioPlex inventory and matching workflows.
 
@@ -9,6 +9,7 @@ The application emphasizes role-based access, explicit database operations, audi
 ## Contents
 
 - [Completed improvement phases](#completed-improvement-phases)
+- [Release 2.5.0](#release-250)
 - [Release 2.4.4](#release-244)
 - [Dashboard](#dashboard)
 - [Main capabilities](#main-capabilities)
@@ -44,6 +45,30 @@ Hardened import and expiry workflows, retained expired inventory history, added 
 #### Phase 5: Customer completion and hardening
 
 Completed the Customer-module audit and corrective package, hardened Customer similarity and Contact RPC authorization, made duplicate audit snapshots database-authoritative, corrected new-Customer card focus, and tightened function grants.
+
+## Release 2.5.0
+
+Release 2.5.0 adds Case-to-instrument traceability, terminal Case follow-up corrections, CSV exports, and Case Details refinements:
+
+- Supports zero, one, or multiple related instruments per Case through `case_instruments`.
+- Restricts selectable instruments to Assets belonging to the selected Customer or Customers and matching the selected Source family.
+- Preserves exact Asset links and allows each Asset to open its related Cases.
+- Shows a related-Case count beside an Asset only when at least one Case is linked.
+- Treats Resolved, Closed, and Cancelled Cases as requiring no follow-up and excludes terminal Cases from overdue behavior.
+- Repairs the audited synthetic multi-Customer records and preserves the approved real Customer relationships.
+- Suppresses expected Customer-search request cancellation errors while retaining genuine errors.
+- Exports Assets and Customer Contacts to CSV with the approved columns.
+- Reorganizes Case Details into clear overview, equipment, classification, actions, and narrative areas.
+- Displays each selected Customer separately and stacks related instruments vertically.
+- Places Created, Target resolution, and Resolved dates inside Case Overview with compact icons.
+- Keeps the Add instrument action compact.
+
+Required Phase 6 migrations:
+
+- `supabase/migrations/20260917_phase6_cases_assets_exports.sql`
+- `supabase/migrations/20260917_phase6_multi_case_instruments.sql`
+
+Run each migration only once and retain the supplied verification SQL in the repository.
 
 ## Release 2.4.4
 
@@ -113,6 +138,8 @@ Expired lots displayed by the Dashboard remain stored and remain visible in hist
 ### Cases
 
 - Create, view, edit, resolve, and delete support Cases.
+- Optionally link a Case to one or more exact installed instruments used by the selected Customer or Customers.
+- Treat Resolved, Closed, and Cancelled Cases as requiring no follow-up.
 - Assign one primary Customer and additional Customers.
 - Keep selected Customers visible with Primary, Additional, Set as primary, and Remove controls.
 - Normalize `customerIds` and `primaryCustomerId` to prevent invalid combinations.
@@ -140,6 +167,7 @@ Expired lots displayed by the Dashboard remain stored and remain visible in hist
 - Store Customer assignment, instrument type, serial number, installation date, active state, and notes.
 - Keep all instrument-type groups together on one page. Pagination is intentionally not used because splitting the small set of collapsed groups was not operationally useful.
 - Prevent stale Asset edits from overwriting newer changes.
+- Export the current Assets view to CSV, open exact related Cases from each Asset, and show a related-Case count only when links exist.
 
 ### Training
 
@@ -422,7 +450,7 @@ Complete Phases 1-4 integrity, scalability, workflows, and BioPlex enhancements
 
 ## Versioning policy
 
-- Current version: `2.4.4`.
+- Current version: `2.5.0`.
 - Keep `package.json`, `package-lock.json`, and the root lock-file package entry synchronized.
 - Do not increase the version for bug fixes, lint fixes, test corrections, or verification-only work.
 - Increase the version only when adding a genuine feature.
@@ -439,4 +467,4 @@ Complete Phases 1-4 integrity, scalability, workflows, and BioPlex enhancements
 
 ## Current status
 
-**Phases 1 through 5 are complete and validated. Current application version: 2.4.4.**
+**Phases 1 through 5 are complete and validated. Release 2.5.0 adds multi-instrument Case traceability, terminal follow-up correction, historical Customer cleanup, CSV exports, Asset related-Case counts, and the reorganized Case Details layout.**
