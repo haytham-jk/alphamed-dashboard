@@ -1,6 +1,6 @@
 # Alphamed Operations Hub
 
-**Current application version:** `2.4.3`
+**Current application version:** `2.4.4`
 
 Alphamed Operations Hub is a React and Supabase application for clinical support operations, Customer sites, installed Assets, Training, Linearity, Unity Real Time, EQAS Online, and BioPlex inventory and matching workflows.
 
@@ -9,6 +9,7 @@ The application emphasizes role-based access, explicit database operations, audi
 ## Contents
 
 - [Completed improvement phases](#completed-improvement-phases)
+- [Release 2.4.4](#release-244)
 - [Dashboard](#dashboard)
 - [Main capabilities](#main-capabilities)
 - [Technology stack](#technology-stack)
@@ -39,6 +40,27 @@ Strengthened Customer duplicate detection and audited override, improved Case Cu
 ### Phase 4: BioPlex hardening and attention
 
 Hardened import and expiry workflows, retained expired inventory history, added actionable Dashboard warnings, improved Stock Count grouping, and added relationship-aware PDF output.
+
+#### Phase 5: Customer completion and hardening
+
+Completed the Customer-module audit and corrective package, hardened Customer similarity and Contact RPC authorization, made duplicate audit snapshots database-authoritative, corrected new-Customer card focus, and tightened function grants.
+
+## Release 2.4.4
+
+Release 2.4.4 adds a small backward-compatible Customer Contact enhancement and related interface refinements:
+
+- Adds **Senior Lab Technician** to Contact designations in the Customer form and Customer Site Overview.
+- Updates PostgreSQL validation in both `save_customer_with_contacts` and `add_customer_contact`.
+- Standardizes the Customer Site Overview **Back to customers** keyboard-focus highlight.
+- Shows the current package version beneath **Sign out** in desktop and mobile navigation.
+- Reads the displayed version from `package.json` so the interface and package metadata remain synchronized.
+
+Required migrations:
+
+- `supabase/migrations/20260917_phase5_customer_corrective_hardening.sql`
+- `supabase/migrations/20260917_add_senior_lab_technician_designation.sql`
+
+Apply each migration only once and retain both files in source control.
 
 ## Dashboard
 
@@ -103,11 +125,12 @@ Expired lots displayed by the Dashboard remain stored and remain visible in hist
 
 - Store Emirate, active state, Contacts, ISO/EIAC accreditation, CAP accreditation, and ISO/EIAC number.
 - Support staged Contact Add, Edit, and Remove before final Customer save.
+- Support Contact designations including Pathologist and Senior Lab Technician in both full Customer save and direct Overview Add Contact workflows.
 - Detect possible duplicate Customers and show similarity reasons.
 - Require intentional audited override when creating a possible duplicate.
 - Block stale duplicate overrides after the Customer name or Emirate changes.
 - Provide Customer Site Overview using Assets, Unity Real Time, and EQAS Online as the source systems.
-- Preserve Customer list filters, pagination, and card focus through Overview and Edit.
+- Preserve Customer list filters, pagination, and card focus through Overview, Edit, and new-Customer creation.
 - Explain clearly when linked records prevent deletion.
 - Use server-side search, filters, sorting, pagination, and counts.
 
@@ -399,7 +422,7 @@ Complete Phases 1-4 integrity, scalability, workflows, and BioPlex enhancements
 
 ## Versioning policy
 
-- Current version: `2.4.3`.
+- Current version: `2.4.4`.
 - Keep `package.json`, `package-lock.json`, and the root lock-file package entry synchronized.
 - Do not increase the version for bug fixes, lint fixes, test corrections, or verification-only work.
 - Increase the version only when adding a genuine feature.
@@ -416,4 +439,4 @@ Complete Phases 1-4 integrity, scalability, workflows, and BioPlex enhancements
 
 ## Current status
 
-**Phases 1 through 4 are complete and validated.**
+**Phases 1 through 5 are complete and validated. Current application version: 2.4.4.**

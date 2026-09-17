@@ -28,6 +28,7 @@ import FlashMessage from "./components/ui/FlashMessage";
 import { supabase } from "./lib/supabase";
 import { getCurrentProfile } from "./services/profile";
 import { preloadRoute, scheduleRoutePreloads } from "./utils/routePreload";
+import packageInfo from "../package.json";
 
 const routeImporters = {
   dashboard: () => import("./pages/DashboardPage"),
@@ -172,14 +173,19 @@ function AppShell({ session, profile }) {
         <nav className="space-y-1" aria-label="Main navigation">
           {navigation}
         </nav>
-        <button
-          type="button"
-          onClick={() => supabase.auth.signOut()}
-          className="absolute bottom-4 left-4 right-4 flex items-center gap-2 rounded-xl border border-slate-800 px-3 py-2 text-sm text-slate-400 hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-        >
-          <LogOut size={18} aria-hidden="true" />
-          Sign out
-        </button>
+        <div className="absolute bottom-4 left-4 right-4">
+          <button
+            type="button"
+            onClick={() => supabase.auth.signOut()}
+            className="flex w-full items-center gap-2 rounded-xl border border-slate-800 px-3 py-2 text-sm text-slate-400 hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+          >
+            <LogOut size={18} aria-hidden="true" />
+            Sign out
+          </button>
+          <p className="mt-2 text-center text-[11px] text-slate-600">
+            Version {packageInfo.version}
+          </p>
+        </div>
       </aside>
 
       <header className="flex items-center justify-between border-b border-slate-800 p-4 md:hidden">
@@ -212,6 +218,9 @@ function AppShell({ session, profile }) {
             <LogOut size={18} aria-hidden="true" />
             Sign out
           </button>
+          <p className="mt-2 text-center text-[11px] text-slate-600">
+            Version {packageInfo.version}
+          </p>
         </div>
       )}
 
