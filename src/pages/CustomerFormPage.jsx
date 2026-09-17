@@ -38,7 +38,15 @@ export default function CustomerFormPage() {
     return true;
   }
   async function persist(allowSimilarOverride = false, candidates = similar) {
-    try { setSaving(true); setError(""); if (editing) await updateCustomer(customerId, values, { allowSimilarOverride, similarCandidates: candidates }); else await createCustomer(values, { allowSimilarOverride, similarCandidates: candidates }); setDirty(false); navigate(customersReturnTo, { state: buildFocusState("focusCustomerId", customerId, "Customer saved successfully.") }); }
+    try {
+      setSaving(true);
+      setError("");
+      const savedCustomer = editing
+        ? await updateCustomer(customerId, values, { allowSimilarOverride, similarCandidates: candidates })
+        : await createCustomer(values, { allowSimilarOverride, similarCandidates: candidates });
+      setDirty(false);
+      navigate(customersReturnTo, { state: buildFocusState("focusCustomerId", savedCustomer.id, "Customer saved successfully.") });
+    }
     catch (saveError) { setError(saveError.message || "Unable to save customer."); }
     finally { setSaving(false); }
   }
