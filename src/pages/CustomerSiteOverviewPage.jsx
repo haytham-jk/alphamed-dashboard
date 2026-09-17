@@ -29,6 +29,7 @@ const DESIGNATIONS = [
   "Lab Manager",
   "Lab Supervisor",
   "Lab Technician",
+  "Senior Lab Technician",
   "Pathologist",
   "Quality Supervisor",
 ];
@@ -216,7 +217,7 @@ export default function CustomerSiteOverviewPage({ canEdit }) {
       <Link
         to={customersReturnTo}
         state={customersReturnState}
-        className="inline-flex items-center gap-2 text-sm text-slate-400"
+        className="-ml-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-slate-400 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
       >
         <ArrowLeft size={18} />
         Back to customers

@@ -10,7 +10,7 @@ import { contactsShareIdentity, normalizeCustomerContact } from "../utils/custom
 import { EMIRATES } from "../constants/locationOptions";
 import { buildFocusState, safeReturnPath } from "../utils/returnNavigation";
 import { canOverrideSimilarCustomer, getDuplicateCheckKey } from "../utils/customerDuplicateWorkflow";
-const DESIGNATIONS = ["Lab Director", "Lab Manager", "Lab Supervisor", "Lab Technician", "Pathologist", "Quality Supervisor"];
+const DESIGNATIONS = ["Lab Director", "Lab Manager", "Lab Supervisor", "Lab Technician", "Senior Lab Technician", "Pathologist", "Quality Supervisor"];
 const inputClass = "mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2";
 const emptyContact = () => ({ key: crypto.randomUUID(), name: "", designation: "Lab Manager", phoneNumber: "", email: "" });
 const initialValues = { expectedUpdatedAt: "", customerName: "", emirate: "", isActive: true, isIsoEiacAccredited: false, isoEiacAccreditationNumber: "", isCapAccredited: false, contacts: [] };
