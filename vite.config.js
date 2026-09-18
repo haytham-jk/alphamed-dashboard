@@ -14,9 +14,9 @@ export default defineConfig({
       includeAssets: [
         "favicon-48-v3.png",
         "apple-touch-icon-v3.png",
-        "icons/icon-192-v3.png",
-        "icons/icon-512-v3.png",
-        "icons/icon-maskable-512-v3.png",
+        "icons/icon-192-v4.png",
+        "icons/icon-512-v4.png",
+        "icons/icon-maskable-512-v4.png",
         "templates/bioplex-inventory-template.xlsx",
       ],
       workbox: {
