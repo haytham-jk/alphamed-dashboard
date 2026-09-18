@@ -1,6 +1,6 @@
 # Alphamed Operations Hub
 
-**Current application version:** `2.5.0`
+**Current application version:** `2.6.0`
 
 Alphamed Operations Hub is a React and Supabase application for clinical support operations, Customer sites, installed Assets, Training, Linearity, Unity Real Time, EQAS Online, and BioPlex inventory and matching workflows.
 
@@ -9,6 +9,7 @@ The application emphasizes role-based access, explicit database operations, audi
 ## Contents
 
 - [Completed improvement phases](#completed-improvement-phases)
+- [Release 2.6.0](#release-260)
 - [Release 2.5.0](#release-250)
 - [Release 2.4.4](#release-244)
 - [Dashboard](#dashboard)
@@ -45,6 +46,23 @@ Hardened import and expiry workflows, retained expired inventory history, added 
 #### Phase 5: Customer completion and hardening
 
 Completed the Customer-module audit and corrective package, hardened Customer similarity and Contact RPC authorization, made duplicate audit snapshots database-authoritative, corrected new-Customer card focus, and tightened function grants.
+
+## Release 2.6.0
+
+Release 2.6.0 adds BioPlex Stock Count display controls and the approved template-based individual-count Excel workflow, with subsequent Assets and Unity Real Time corrections:
+
+- Adds **Expand all** and **Collapse all** to saved and completed BioPlex Stock Count details while preserving individual section controls and search behavior.
+- Provides **Template Excel** using `public/templates/bioplex-inventory-template.xlsx`, with visible generation/error feedback and an explicit `.xlsx` filename.
+- Preserves the user-edited template layout, assay-level `Qty | Lot | Expiry` headings, controlled fallback mapping for historical items without product codes, and horizontal expansion for additional stock sets.
+- Keeps matching reagent kits and calibrators in the same horizontal stock-set position using stored count relationships.
+- Uses the supported `Detailed Excel` audit type internally for Template Excel exports.
+- Returns from Asset Edit, Cancel, or Save to the exact Asset row with its group expanded, smooth scrolling, keyboard focus, and temporary highlighting.
+- Makes Edit Asset **Back to assets** match the New Asset page control.
+- Shows `No related Cases` instead of opening an empty Cases page when an Asset has no linked Cases.
+- Uses the scoped `asset-group-trigger` CSS exception to prevent clipped purple global hover/focus lines on Asset disclosure headers while retaining accessible neutral focus.
+- Adds visible Unity Real Time labels for Search, License status, Connectivity, Service pack, and Customer.
+
+No database migration was required for these Release 2.6.0 refinements. Later fixes did not increase the application version.
 
 ## Release 2.5.0
 
@@ -167,7 +185,9 @@ Expired lots displayed by the Dashboard remain stored and remain visible in hist
 - Store Customer assignment, instrument type, serial number, installation date, active state, and notes.
 - Keep all instrument-type groups together on one page. Pagination is intentionally not used because splitting the small set of collapsed groups was not operationally useful.
 - Prevent stale Asset edits from overwriting newer changes.
-- Export the current Assets view to CSV, open exact related Cases from each Asset, and show a related-Case count only when links exist.
+- Export the current Assets view to CSV, open exact related Cases from each Asset, and show a related-Case count only when links exist. If no links exist, show `No related Cases` without navigating.
+- Return from Asset Edit, Cancel, or Save to the exact row with the correct group expanded, smooth scrolling, focus, and temporary highlighting.
+- Keep the scoped `asset-group-trigger` CSS exception that removes clipped global purple shadow/outline artifacts from disclosure headers.
 
 ### Training
 
@@ -197,6 +217,7 @@ Expired lots displayed by the Dashboard remain stored and remain visible in hist
 - Manage Unity Real Time installations and Customer assignments.
 - Store Primary ID, expiry, connectivity, service-pack information, credential references, and notes.
 - Use server-side search, filters, pagination, and summary metrics.
+- Display visible labels above Search, License status, Connectivity, Service pack, and Customer filters.
 - Prevent stale edits from overwriting newer changes.
 
 ### BioPlex Inventory
@@ -209,7 +230,7 @@ Expired lots displayed by the Dashboard remain stored and remain visible in hist
 - Retain expired master lots and all historical count items and links.
 - Exclude expired and missing-expiry lots from normal active matching for new counts.
 - Preserve completed-count historical snapshots after master-lot corrections.
-- Provide Quick Excel, Detailed Excel, PDF, and Customer History exports.
+- Provide Quick Excel, template-based individual-count Excel, PDF, and Customer History exports.
 - Display prominent reagent groups with separate matching-calibrator and related-QC panels.
 - Identify shared calibrators and all reagent lots they match.
 - Generate relationship-aware PDFs from historical count-specific links.
@@ -450,7 +471,7 @@ Complete Phases 1-4 integrity, scalability, workflows, and BioPlex enhancements
 
 ## Versioning policy
 
-- Current version: `2.5.0`.
+- Current version: `2.6.0`.
 - Keep `package.json`, `package-lock.json`, and the root lock-file package entry synchronized.
 - Do not increase the version for bug fixes, lint fixes, test corrections, or verification-only work.
 - Increase the version only when adding a genuine feature.
@@ -467,4 +488,4 @@ Complete Phases 1-4 integrity, scalability, workflows, and BioPlex enhancements
 
 ## Current status
 
-**Phases 1 through 5 are complete and validated. Release 2.5.0 adds multi-instrument Case traceability, terminal follow-up correction, historical Customer cleanup, CSV exports, Asset related-Case counts, and the reorganized Case Details layout.**
+**Phases 1 through 5 remain complete. Release 2.6.0 includes BioPlex Expand all/Collapse all, the approved template-based Excel export, and the documented Assets and Unity Real Time refinements.**

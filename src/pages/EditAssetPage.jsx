@@ -68,7 +68,7 @@ export default function EditAssetPage() {
       });
       setDirty(false);
       navigate("/assets", {
-        state: { message: "Asset saved successfully." },
+        state: { message: "Asset saved successfully.", focusAssetId: String(assetId) },
       });
     } catch (saveError) {
       setError(saveError.message || "Unable to update asset.");
@@ -110,10 +110,11 @@ export default function EditAssetPage() {
     <div className="mx-auto max-w-3xl space-y-5">
       <Link
         to="/assets"
+        state={{ focusAssetId: String(assetId) }}
         onClick={(event) => {
           if (!confirmDiscard()) event.preventDefault();
         }}
-        className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white"
+        className="-ml-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-slate-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
       >
         <ArrowLeft size={18} />
         Back to assets
@@ -233,6 +234,7 @@ export default function EditAssetPage() {
           <div className="flex justify-end gap-3">
             <Link
               to="/assets"
+              state={{ focusAssetId: String(assetId) }}
               onClick={(event) => {
                 if (!confirmDiscard()) event.preventDefault();
               }}

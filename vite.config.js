@@ -17,6 +17,7 @@ export default defineConfig({
         "icons/icon-192-v3.png",
         "icons/icon-512-v3.png",
         "icons/icon-maskable-512-v3.png",
+        "templates/bioplex-inventory-template.xlsx",
       ],
       workbox: {
         cleanupOutdatedCaches: true,

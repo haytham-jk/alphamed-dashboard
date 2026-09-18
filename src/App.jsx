@@ -182,7 +182,7 @@ function AppShell({ session, profile }) {
             <LogOut size={18} aria-hidden="true" />
             Sign out
           </button>
-          <p className="mt-2 text-center text-[11px] text-slate-600">
+          <p className="mt-2 px-3 text-left text-[11px] text-slate-600">
             Version {packageInfo.version}
           </p>
         </div>
@@ -218,7 +218,7 @@ function AppShell({ session, profile }) {
             <LogOut size={18} aria-hidden="true" />
             Sign out
           </button>
-          <p className="mt-2 text-center text-[11px] text-slate-600">
+          <p className="mt-2 px-3 text-left text-[11px] text-slate-600">
             Version {packageInfo.version}
           </p>
         </div>

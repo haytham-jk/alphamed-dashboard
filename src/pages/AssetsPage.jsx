@@ -215,7 +215,7 @@ export default function AssetsPage({ canEdit }) {
                 onClick={() =>
                   toggleGroup(group.instrumentType)
                 }
-                className="flex w-full items-center justify-between gap-4 border-b border-slate-800 p-4 text-left hover:bg-slate-800/60"
+                className="asset-group-trigger flex w-full items-center justify-between gap-4 border-b border-slate-800 p-4 text-left transition-colors duration-150 focus-visible:outline-none"
               >
                 <div className="flex items-center gap-3">
                   {expanded ? (
@@ -281,14 +281,22 @@ export default function AssetsPage({ canEdit }) {
                                   )}
                                 </span>
                               </Link>
-                              <Link to={`/cases?asset=${asset.id}&status=All`} className="mx-4 mb-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-700 px-2 py-1 text-xs text-blue-300 hover:border-blue-600 hover:bg-blue-950/40">
-                                Related cases
-                                {asset.related_case_count > 0 && (
+                              {asset.related_case_count > 0 ? (
+                                <Link to={`/cases?asset=${asset.id}&status=All`} className="mx-4 mb-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-700 px-2 py-1 text-xs text-blue-300 hover:border-blue-600 hover:bg-blue-950/40">
+                                  Related cases
                                   <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-blue-900 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-blue-100">
                                     {asset.related_case_count}
                                   </span>
-                                )}
-                              </Link>
+                                </Link>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => window.alert("No related Cases")}
+                                  className="mx-4 mb-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-700 px-2 py-1 text-xs text-blue-300 hover:border-blue-600 hover:bg-blue-950/40"
+                                >
+                                  Related cases
+                                </button>
+                              )}
                             </td>
 
                             <td className="p-0 text-slate-400">

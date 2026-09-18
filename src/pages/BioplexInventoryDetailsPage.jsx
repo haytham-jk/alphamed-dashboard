@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowUp, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, ArrowUp, ChevronsDown, ChevronsUp, ChevronDown, ChevronRight } from "lucide-react";
 import SelectInput from "../components/ui/SelectInput";
 import { getBioplexCount } from "../services/bioplexInventory";
 import { exportBioplexCountDetailed, exportBioplexCountPdf, exportBioplexCountQuick } from "../services/bioplexInventoryExport";
@@ -21,7 +21,7 @@ function matches(item, query, filter) {
 }
 export default function BioplexInventoryDetailsPage({ canEdit }) {
   const { sessionId } = useParams();
-  const [record, setRecord] = useState(null); const [error, setError] = useState(""); const [search, setSearch] = useState(""); const [filter, setFilter] = useState("All"); const [collapsed, setCollapsed] = useState(new Set(["Consumables"]));
+  const [record, setRecord] = useState(null); const [error, setError] = useState(""); const [search, setSearch] = useState(""); const [filter, setFilter] = useState("All"); const [collapsed, setCollapsed] = useState(new Set(["Consumables"])); const [auditCollapsed, setAuditCollapsed] = useState(true);
   useEffect(() => { getBioplexCount(sessionId).then(setRecord).catch((requestError) => setError(requestError.message)); }, [sessionId]);
   const sections = useMemo(() => {
     if (!record) return [];
@@ -36,15 +36,44 @@ export default function BioplexInventoryDetailsPage({ canEdit }) {
     for (const [key, items] of [["standaloneCalibrators", groups.standaloneCalibrators], ["standaloneQc", groups.standaloneQc], ["consumables", groups.consumables]]) for (const item of items) if (matches(item, query, filter)) { const section = ensure(item.assay_name_snapshot || (key === "consumables" ? "Consumables" : "Unassigned assay")); section[key].push(item); section.allItems.push(item); }
     return [...map.values()].filter((section) => section.groups.length || section.standaloneCalibrators.length || section.standaloneQc.length || section.consumables.length).sort((a,b) => a.name.localeCompare(b.name));
   }, [filter, record, search]);
+  const collapseAll = () => setCollapsed(new Set(sections.map((section) => section.name)));
+  const expandAll = () => setCollapsed(new Set());
   if (error && !record) return <div className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-300">{error}</div>;
   if (!record) return <div className="text-slate-400">Loading...</div>;
   const count = record.count; const canExport = ["Completed", "Exported"].includes(count.status) && !count.deleted_at;
   return <div className="mx-auto max-w-7xl space-y-5 pb-20">
-    <header className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm text-blue-400">BioPlex Inventory</p><h1 className="text-3xl font-semibold">{count.customers?.customer_name}</h1><p className="mt-1 text-slate-400">Counted {formatBioplexDate(count.counted_on)} · {count.status}</p></div><div className="flex flex-wrap gap-2">{canExport && <><button onClick={() => exportBioplexCountQuick(sessionId)} className="rounded-xl border border-emerald-700 px-3 py-2 text-emerald-300">Quick Excel</button><button onClick={() => exportBioplexCountDetailed(sessionId)} className="rounded-xl border border-blue-700 px-3 py-2 text-blue-300">Detailed Excel</button><button onClick={() => exportBioplexCountPdf(sessionId)} className="rounded-xl border border-purple-700 px-3 py-2 text-purple-300">PDF</button></>}{canEdit && <Link to={`/bioplex-inventory/${sessionId}/edit`} className="rounded-xl bg-blue-600 px-4 py-2">Edit</Link>}</div></header>
-    <Link to="/bioplex-inventory" className="inline-flex items-center gap-2 text-sm text-slate-400"><ArrowLeft size={18}/>Back</Link>
+    <header className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm text-blue-400">BioPlex Inventory</p><h1 className="text-3xl font-semibold">{count.customers?.customer_name}</h1><p className="mt-1 text-slate-400">Counted {formatBioplexDate(count.counted_on)} · {count.status}</p></div><div className="flex flex-wrap gap-2">{canExport && <><button onClick={() => exportBioplexCountQuick(sessionId)} className="rounded-xl border border-emerald-700 px-3 py-2 text-emerald-300">Quick Excel</button><button onClick={() => exportBioplexCountDetailed(sessionId)} className="rounded-xl border border-blue-700 px-3 py-2 text-blue-300">Template Excel</button><button onClick={() => exportBioplexCountPdf(sessionId)} className="rounded-xl border border-purple-700 px-3 py-2 text-purple-300">PDF</button></>}{canEdit && <Link to={`/bioplex-inventory/${sessionId}/edit`} className="rounded-xl bg-blue-600 px-4 py-2">Edit</Link>}</div></header>
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <Link to="/bioplex-inventory" className="-ml-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-slate-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"><ArrowLeft size={18}/>Back</Link>
+      <div className="flex items-center gap-2" aria-label="Section display controls">
+        <button type="button" onClick={expandAll} disabled={!sections.length} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-700 px-3 text-sm text-slate-300 hover:border-blue-700 hover:bg-blue-950/30 hover:text-blue-200 disabled:opacity-50"><ChevronsDown size={16}/>Expand all</button>
+        <button type="button" onClick={collapseAll} disabled={!sections.length || Boolean(search)} title={search ? "Clear search before collapsing all sections" : undefined} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-700 px-3 text-sm text-slate-300 hover:border-blue-700 hover:bg-blue-950/30 hover:text-blue-200 disabled:opacity-50"><ChevronsUp size={16}/>Collapse all</button>
+      </div>
+    </div>
     <section className="sticky top-2 z-20 rounded-2xl border border-slate-700 bg-slate-900/95 p-3 shadow-xl backdrop-blur"><div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_16rem]"><input type="search" className={inputClass} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search assay, material, or lot"/><SelectInput className={inputClass} value={filter} onChange={(event) => setFilter(event.target.value)}>{["All","Reagents","Calibrators","QC","Consumables","Missing quantity","Zero quantity"].map((value)=><option key={value}>{value}</option>)}</SelectInput></div></section>
-    <section className="space-y-5">{sections.map((section) => { const closed = collapsed.has(section.name) && !search; const unique = [...new Map(section.allItems.map((item)=>[item.id,item])).values()]; const entered = unique.filter((item)=>item.quantity != null).length; return <article key={section.name} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900"><button type="button" onClick={()=>setCollapsed((current)=>{const next=new Set(current);next.has(section.name)?next.delete(section.name):next.add(section.name);return next;})} className="flex w-full items-center justify-between bg-slate-900 p-4"><span className="flex items-center gap-2">{closed?<ChevronRight/>:<ChevronDown/>}<strong className="text-lg">{section.name}</strong></span><span className="rounded-full bg-slate-800 px-3 py-1 text-xs">{section.groups.length} groups · {entered}/{unique.length} quantities</span></button>{!closed && <div className="space-y-4 border-t border-slate-800 bg-slate-950/35 p-4">{section.groups.map((group)=><MatchingGroup key={group.reagent.id} group={group}/>) }<Standalone title="Standalone calibrators" items={section.standaloneCalibrators}/><Standalone title="Standalone QC" items={section.standaloneQc}/><Standalone title="Consumables" items={section.consumables}/></div>}</article>;})}</section>
-    <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5"><h2 className="text-xl font-semibold">Audit history</h2>{record.events.map((event)=><div key={event.id} className="mt-3 rounded-xl bg-slate-950 p-3"><p className="font-medium">{event.event_type}</p><p className="text-sm text-slate-400">{event.reason || "No reason"}</p></div>)}</section>
+    <section className="space-y-5">{sections.map((section) => { const closed = collapsed.has(section.name) && !search; const unique = [...new Map(section.allItems.map((item)=>[item.id,item])).values()]; const entered = unique.filter((item)=>item.quantity != null).length; return <article key={section.name} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900"><button type="button" onClick={()=>setCollapsed((current)=>{const next=new Set(current);next.has(section.name)?next.delete(section.name):next.add(section.name);return next;})} className="asset-group-trigger flex w-full items-center justify-between bg-slate-900 p-4 text-left focus-visible:outline-none"><span className="flex items-center gap-2">{closed?<ChevronRight/>:<ChevronDown/>}<strong className="text-lg">{section.name}</strong></span><span className="rounded-full bg-slate-800 px-3 py-1 text-xs">{section.groups.length} groups · {entered}/{unique.length} quantities</span></button>{!closed && <div className="space-y-4 border-t border-slate-800 bg-slate-950/35 p-4">{section.groups.map((group)=><MatchingGroup key={group.reagent.id} group={group}/>) }<Standalone title="Standalone calibrators" items={section.standaloneCalibrators}/><Standalone title="Standalone QC" items={section.standaloneQc}/><Standalone title="Consumables" items={section.consumables}/></div>}</article>;})}</section>
+    <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
+      <button
+        type="button"
+        onClick={() => setAuditCollapsed((current) => !current)}
+        aria-expanded={!auditCollapsed}
+        aria-controls="bioplex-audit-history"
+        className="flex w-full items-center justify-between gap-4 p-5 text-left hover:bg-slate-800/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-500"
+      >
+        <span className="flex items-center gap-2">
+          {auditCollapsed ? <ChevronRight size={20} /> : <ChevronDown size={20} />}
+          <span className="text-xl font-semibold">Audit history</span>
+        </span>
+        <span className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-400">
+          {record.events.length} {record.events.length === 1 ? "event" : "events"}
+        </span>
+      </button>
+      {!auditCollapsed && (
+        <div id="bioplex-audit-history" className="border-t border-slate-800 p-5 pt-2">
+          {record.events.length ? record.events.map((event)=><div key={event.id} className="mt-3 rounded-xl bg-slate-950 p-3"><p className="font-medium">{event.event_type}</p><p className="text-sm text-slate-400">{event.reason || "No reason"}</p></div>) : <p className="mt-3 text-sm text-slate-500">No audit events recorded.</p>}
+        </div>
+      )}
+    </section>
     <button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} className="fixed bottom-5 right-4 rounded-full border border-slate-700 bg-slate-900 p-3 shadow-xl" aria-label="Back to top"><ArrowUp size={20}/></button>
   </div>;
 }
