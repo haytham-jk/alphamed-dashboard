@@ -2,6 +2,7 @@ import { getLocalDateOnly } from "../utils/dates.js";
 export const CASE_STATUSES = [
   "New",
   "Pending",
+  "On-hold",
   "In Progress",
   "Escalated",
   "Unresolved",
@@ -66,6 +67,7 @@ export function createEmptyCaseValues() {
 export const ACTIVE_CASE_STATUSES = [
   "New",
   "Pending",
+  "On-hold",
   "In Progress",
   "Escalated",
   "Unresolved",

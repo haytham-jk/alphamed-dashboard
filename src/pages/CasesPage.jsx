@@ -144,6 +144,7 @@ export default function CasesPage({ canEdit }) {
       const values = [
         record.title,
         record.description,
+        record.caseNumber,
         record.customer,
         ...(record.customerNames || []),
         ...(record.source || []),

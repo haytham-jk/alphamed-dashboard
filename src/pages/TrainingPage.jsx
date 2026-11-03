@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { GraduationCap, Plus, RefreshCw, Search } from "lucide-react";
 import { getTrainingRecordsPage } from "../services/training";
+import { isExpectedAbortError } from "../utils/requestErrors";
 import { ErrorState } from "../components/ui/AsyncState";
 import { formatDateOnly } from "../utils/dateDisplay";
 import PaginationControls from "../components/ui/PaginationControls";
@@ -40,7 +41,7 @@ export default function TrainingPage({ canEdit }) {
         setResult(next);
         if (next.page !== page) updateFilter("page", next.page);
       } catch (loadError) {
-        if (loadError?.name !== "AbortError") setError(loadError?.message || "Unable to load training records.");
+        if (!isExpectedAbortError(loadError)) setError(loadError?.message || "Unable to load training records.");
       } finally {
         if (!controller.signal.aborted) { setLoading(false); setRefreshing(false); }
       }

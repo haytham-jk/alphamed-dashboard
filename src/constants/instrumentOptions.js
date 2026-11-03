@@ -5,6 +5,8 @@ export const INSTRUMENT_TYPES = [
   "Bio-Rad Variant Turbo",
   "Bio-Rad Vnbs",
   "Bioplex 2200",
+  "EVOLIS Premium",
+  "EVOLIS Twin plus",
   "Geenius",
   "Other",
 ];

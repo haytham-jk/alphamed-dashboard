@@ -1,6 +1,7 @@
 export const CASE_STATUS_COLORS = {
   New: "border-slate-700 bg-slate-800 text-slate-200",
   Pending: "border-cyan-900 bg-cyan-950 text-cyan-300",
+  "On-hold": "border-amber-900 bg-amber-950 text-amber-300",
   "In Progress": "border-blue-900 bg-blue-950 text-blue-300",
   Escalated: "border-red-900 bg-red-950 text-red-300",
   Unresolved: "border-orange-900 bg-orange-950 text-orange-300",

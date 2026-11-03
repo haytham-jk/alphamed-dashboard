@@ -1,6 +1,6 @@
 # Alphamed Operations Hub
 
-**Current application version:** `2.6.0`
+**Current application version:** `2.7.0`
 
 Alphamed Operations Hub is a React and Supabase application for clinical support operations, Customer sites, installed Assets, Training, Linearity, Unity Real Time, EQAS Online, and BioPlex inventory and matching workflows.
 
@@ -9,6 +9,7 @@ The application emphasizes role-based access, explicit database operations, audi
 ## Contents
 
 - [Completed improvement phases](#completed-improvement-phases)
+- [Release 2.7.0](#release-270)
 - [Release 2.6.0](#release-260)
 - [Release 2.5.0](#release-250)
 - [Release 2.4.4](#release-244)
@@ -46,6 +47,27 @@ Hardened import and expiry workflows, retained expired inventory history, added 
 #### Phase 5: Customer completion and hardening
 
 Completed the Customer-module audit and corrective package, hardened Customer similarity and Contact RPC authorization, made duplicate audit snapshots database-authoritative, corrected new-Customer card focus, and tightened function grants.
+
+## Release 2.7.0
+
+Release 2.7.0 adds the standardized BioPlex matching-template workflow and final operational refinements:
+- Supports standardized `Kit-Calibrator Matches` and `QC Controls` worksheets while retaining the legacy importer.
+- Ignores `Instructions`, `Needs Review`, hidden helper sheets, and unrelated worksheets.
+- Preserves many-to-many relationships and prevents recreation of previously imported data through existing database duplicate classification.
+- Supports multiple distinct fixed consumables in one count through the corrected consumable identity index.
+- Adds Case-number search, `On-hold`, `EVOLIS Premium`, and `EVOLIS Twin plus`.
+- Adds numeric BioPlex lot entry, expected AbortError suppression, and consistent BioPlex Back-button styling.
+- Synchronizes the application and package version at 2.7.0.
+
+Final validation and security:
+- 83 automated tests passed; ESLint and the Vite production build passed.
+- Vite PWA generated `dist/sw.js` and the Workbox asset.
+- A non-forced `npm audit fix` reduced the full audit from 27 findings to 15 and removed all critical and high-severity findings.
+- `npm audit --omit=dev` reports zero production vulnerabilities.
+- The remaining 15 findings are low/moderate development-tool findings in ESLint and Vite PWA/Workbox and are monitored technical debt.
+- `core-js@3.49.0` remains an optional blocked postinstall under jsPDF/canvg.
+- `glob@11.1.0` remains transitive through `vite-plugin-pwa@1.3.0 -> workbox-build@7.4.1`.
+- Do not run `npm audit fix --force`, apply unsafe overrides, or downgrade validated tooling solely to suppress warnings.
 
 ## Release 2.6.0
 
@@ -471,7 +493,7 @@ Complete Phases 1-4 integrity, scalability, workflows, and BioPlex enhancements
 
 ## Versioning policy
 
-- Current version: `2.6.0`.
+- Current version: `2.7.0`.
 - Keep `package.json`, `package-lock.json`, and the root lock-file package entry synchronized.
 - Do not increase the version for bug fixes, lint fixes, test corrections, or verification-only work.
 - Increase the version only when adding a genuine feature.
@@ -488,4 +510,4 @@ Complete Phases 1-4 integrity, scalability, workflows, and BioPlex enhancements
 
 ## Current status
 
-**Phases 1 through 5 remain complete. Release 2.6.0 includes BioPlex Expand all/Collapse all, the approved template-based Excel export, and the documented Assets and Unity Real Time refinements.**
+**Phases 1 through 5 remain complete. Release 2.7.0 is the current validated baseline with zero production dependency vulnerabilities.**
