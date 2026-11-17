@@ -9,3 +9,5 @@ test("case normalization derives progress and clears non-terminal resolution",()
 test("all shared statuses have authoritative progress",()=>{for(const status of CASE_STATUSES) assert.equal(getCaseProgress(status),CASE_PROGRESS_BY_STATUS[status]);});
 test("case validation accepts one customer and enforces terminal fields",()=>{assert.deepEqual(validateCase(valid()),{}); const errors=validateCase({...valid(),status:"Resolved",resolvedDate:"",resolutionSummary:""}); assert.ok(errors.resolvedDate); assert.ok(errors.resolutionSummary); assert.equal(validateCase({...valid(),internalCase:true,customerIds:[],primaryCustomerId:""}).customerIds,undefined);});
 test("source normalizer removes blanks and duplicates in order",()=>assert.deepEqual(normalizeCaseSources([" EQAS ","","EQAS","BioPlex"]),["EQAS","BioPlex"]));
+
+test("Evolis and ETP are valid case sources", async()=>{const {SOURCE_OPTIONS}=await import("../src/constants/caseOptions.js");assert.ok(SOURCE_OPTIONS.includes("Evolis"));assert.ok(SOURCE_OPTIONS.includes("ETP"));});

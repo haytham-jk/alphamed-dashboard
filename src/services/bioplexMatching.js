@@ -106,6 +106,14 @@ export async function commitBioplexImport(importId, importVersion){
   if(error)throw bioplexImportConflictError(error);
   return Number(data);
 }
+export async function cancelBioplexMatchingImport(importId, importVersion) {
+  const { data, error } = await supabase.rpc("cancel_bioplex_matching_import", {
+    p_import_id: Number(importId),
+    p_expected_review_version: expectedImportVersion(importVersion),
+  });
+  if (error) throw bioplexImportConflictError(error);
+  return Number(data);
+}
 export async function rollbackBioplexImport(importId,reason){const {data,error}=await supabase.rpc("rollback_bioplex_matching_import",{p_import_id:Number(importId),p_reason:String(reason??"")});if(error)throw error;return Number(data);}
 export async function findBioplexMatches(lotNumber,materialType="",includeInactive=false){
   const {data,error}=await supabase.rpc("find_bioplex_matching_lots",{p_lot_number:String(lotNumber??"").trim(),p_material_type:materialType||null,p_include_inactive:Boolean(includeInactive)});
@@ -223,11 +231,14 @@ export async function getActiveBioplexMatchingSnapshot() {
 }
 
 export async function getBioplexLotsForMaintenance() {
-  return fetchAllBioplexPages((from, to) =>
-    supabase
-      .from("bioplex_lots")
-      .select("id, assay_id, product_id, material_type, lot_number, normalized_lot_number, release_date, expiry_date, is_active, source_import_id, updated_at, bioplex_assays(assay_name), bioplex_products(product_name, product_code)")
-      .order("normalized_lot_number")
-      .range(from, to)
-  );
+  const [lots, countsResult] = await Promise.all([
+    fetchAllBioplexPages((from, to) => supabase.from("bioplex_lots").select("id, assay_id, product_id, material_type, lot_number, normalized_lot_number, release_date, expiry_date, is_active, source_import_id, source_import_row_id, created_at, updated_at, bioplex_assays(assay_name), bioplex_products(product_name, product_code)").order("normalized_lot_number").range(from, to)),
+    supabase.rpc("get_bioplex_lot_maintenance_counts"),
+  ]);
+  if (countsResult.error) throw countsResult.error;
+  const counts = new Map((countsResult.data ?? []).map((item) => [Number(item.lot_id), item]));
+  return lots.map((lot) => ({ ...lot, ...(counts.get(Number(lot.id)) ?? { relationship_count: 0, stock_count_usage_count: 0, snapshot_usage_count: 0 }) }));
 }
+export async function previewBioplexLotCleanup(lotId){const{data,error}=await supabase.rpc("preview_bioplex_lot_cleanup",{p_lot_id:Number(lotId)});if(error)throw error;return Array.isArray(data)?data[0]??null:data;}
+export async function deactivateBioplexLot(lotId,reason,expectedUpdatedAt){const{data,error}=await supabase.rpc("deactivate_bioplex_lot",{p_lot_id:Number(lotId),p_reason:String(reason??"").trim(),p_expected_updated_at:expectedUpdatedAt||null});if(error)throw error;return Number(data);}
+export async function deleteUnusedBioplexLot(lotId,reason,expectedUpdatedAt){const{data,error}=await supabase.rpc("delete_unused_bioplex_lot",{p_lot_id:Number(lotId),p_reason:String(reason??"").trim(),p_expected_updated_at:expectedUpdatedAt||null});if(error)throw error;return Number(data);}

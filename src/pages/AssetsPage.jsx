@@ -254,7 +254,7 @@ export default function AssetsPage({ canEdit }) {
                           !asset.customer_id;
 
                         const destination =
-                          `/assets/${asset.id}/edit`;
+                          `/assets/${asset.id}`;
 
                         return (
                           <tr

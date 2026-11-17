@@ -20,6 +20,8 @@ import { getInstrumentsForCustomers } from "../../services/assets";
 import { isExpectedAbortError } from "../../utils/requestErrors";
 
 const INSTRUMENT_MATCHERS = [
+  ["etp", /\bevolis\s+twin\s+plus\b/],
+  ["evolis", /\bevolis\s+premium\b/],
   ["d100", /\bd\s*100\b/],
   ["d10", /\bd\s*10\b/],
   ["variant turbo", /\bvariant\s+turbo\b/],
@@ -42,7 +44,12 @@ function getInstrumentFamily(value) {
 }
 
 function sourceMatchesInstrument(source, instrumentName) {
-  const sourceFamily = getInstrumentFamily(source);
+  const sourceLabel = String(source || "").trim();
+  const sourceFamily = sourceLabel === "Evolis"
+    ? "evolis"
+    : sourceLabel === "ETP"
+      ? "etp"
+      : getInstrumentFamily(sourceLabel);
   return Boolean(sourceFamily) && sourceFamily === getInstrumentFamily(instrumentName);
 }
 

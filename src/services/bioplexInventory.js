@@ -94,3 +94,16 @@ export async function getBioplexMatchingWarningImports() {
     return summary ? [{ ...item, blockingRowCount: summary.count, blockingReasons: [...summary.reasons] }] : [];
   });
 }
+
+export async function getBioplexOperationalReport(referenceDate) {
+  const { data, error } = await supabase.rpc("get_bioplex_operational_report", { p_reference_date: referenceDate });
+  if (error) throw error;
+  return {
+    latestCounts: Array.isArray(data?.latest_counts) ? data.latest_counts : [],
+    latestItems: Array.isArray(data?.latest_items) ? data.latest_items : [],
+    counts: Array.isArray(data?.counts) ? data.counts : [],
+    lots: Array.isArray(data?.lots) ? data.lots : [],
+    audit: Array.isArray(data?.audit) ? data.audit : [],
+    referenceDate: data?.reference_date || referenceDate,
+  };
+}

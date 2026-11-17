@@ -10,6 +10,7 @@ import {
 import {
   buildParsedReviewModel,
   classifyParsedImportRows,
+  filterCurrentBioplexImportRows,
   summarizeImportImpact,
 } from "../utils/bioplexImportReviewModel";
 
@@ -68,7 +69,12 @@ export default function BioplexMatchingImportsPage() {
         getActiveBioplexMatchingSnapshot(),
       ]);
       const classifiedRows = classifyParsedImportRows(nextParsed.rows, nextSnapshot);
-      setParsed({ ...nextParsed, rows: classifiedRows });
+      const currentRows = filterCurrentBioplexImportRows(classifiedRows);
+      setParsed({
+        ...nextParsed,
+        rows: currentRows,
+        ignoredHistoricalRowCount: classifiedRows.length - currentRows.length,
+      });
       setSnapshot(nextSnapshot);
       setReplaceAcknowledged(false);
     } catch (reviewError) {
@@ -99,6 +105,7 @@ export default function BioplexMatchingImportsPage() {
   return <div className="mx-auto max-w-7xl space-y-5">
     <Link to="/bioplex-inventory" className="-ml-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-slate-400 hover:text-white focus-visible:ring-2 focus-visible:ring-blue-400"><ArrowLeft size={18}/>Back to BioPlex Management</Link>
     <header><p className="text-sm text-blue-400">BioPlex</p><h1 className="text-3xl font-semibold">Matching Imports</h1><p className="mt-1 text-slate-400">Workbook parsing and impact review do not change database data.</p></header>
+    <section className="grid gap-4 md:grid-cols-2"><article className="rounded-2xl border border-blue-900 bg-blue-950/20 p-5"><h2 className="text-xl font-semibold">Import workbook</h2><p className="mt-2 text-sm text-slate-400">Upload a standardized or legacy matching workbook for larger updates.</p></article><Link to="/bioplex-matching-imports/manual" className="rounded-2xl border border-emerald-800 bg-emerald-950/20 p-5 transition-colors hover:bg-emerald-950/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"><h2 className="text-xl font-semibold text-emerald-200">Manual matching entry</h2><p className="mt-2 text-sm text-slate-400">Add one reagent lot with matching calibrators and optional QC.</p></Link></section>
 
     <section className="grid gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5 md:grid-cols-[1fr_14rem_auto]">
       <input ref={fileRef} type="file" accept=".xlsx" className={inputClass} onChange={(event) => { setFile(event.target.files?.[0] ?? null); setParsed(null); }}/>
@@ -108,7 +115,7 @@ export default function BioplexMatchingImportsPage() {
 
     {error && <div className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-300" role="alert">{error}</div>}
 
-    {parsed && <>
+    {parsed && <><div className="rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-slate-400">Ignored expired or incomplete historical rows: <span className="font-semibold text-slate-200">{parsed.ignoredHistoricalRowCount ?? 0}</span></div>
       <section className="grid gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:grid-cols-2 lg:grid-cols-6">
         <Metric label="Materials" value={model.materials.length}/><Metric label="Relationships" value={model.relationships.length}/><Metric label="New materials" value={impact.newMaterials} tone="text-emerald-300"/><Metric label="New relationships" value={impact.newRelationships} tone="text-cyan-300"/><Metric label="Existing materials" value={impact.existingMaterials}/><Metric label="Existing relationships" value={impact.existingRelationships}/>
       </section>

@@ -1,140 +1,31 @@
-import { handleInvalidCapture } from "../utils/formFocus";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, CalendarClock, Link2, RefreshCw, Search, Trash2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import SelectInput from "../components/ui/SelectInput";
-import { useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, CalendarClock, Search } from "lucide-react";
-import {
-  findBioplexMatches,
-} from "../services/bioplexMatching";
 import { formatBioplexDate } from "../utils/bioplexDates";
+import { correctBioplexLotExpiry, deactivateBioplexLot, deleteUnusedBioplexLot, getActiveBioplexMatchingSnapshot, getBioplexLotEvents, getBioplexLotsForMaintenance, previewBioplexLotCleanup } from "../services/bioplexMatching";
 
-const inputClass = "w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20";
-
-function normalizeDashboardResults(rows) {
-  const filtered = (rows ?? [])
-    .filter((row) => {
-      if (row.material_type === "kit") {
-        return !row.related_lot_id || (
-          (row.relationship_type === "kit_calibrator" &&
-          row.related_material_type === "calibrator") ||
-          (row.relationship_type === "assay_related" &&
-          row.related_material_type === "qc")
-        );
-      }
-      if (row.material_type === "calibrator") {
-        return !row.related_lot_id || (
-          (row.relationship_type === "kit_calibrator" &&
-          row.related_material_type === "kit") ||
-          (row.relationship_type === "assay_related" &&
-          row.related_material_type === "qc")
-        );
-      }
-      return row.material_type === "qc";
-    })
-    .map((row) => row.material_type === "qc" ? {
-      ...row,
-      related_lot_id: null,
-      related_material_type: null,
-      related_lot_number: null,
-      related_expiry_date: null,
-      relationship_type: null,
-    } : row);
-
-  return filtered.filter((row, index, allRows) => {
-    const key = `${row.lot_id}|${row.related_lot_id ?? "none"}|${row.relationship_type ?? "none"}`;
-    return allRows.findIndex((candidate) =>
-      `${candidate.lot_id}|${candidate.related_lot_id ?? "none"}|${candidate.relationship_type ?? "none"}` === key
-    ) === index;
-  });
-}
-
-export default function BioplexMatchingCheckPage({ profile }) {
-  const [lot, setLot] = useState("");
-  const [type, setType] = useState("");
-  const [results, setResults] = useState([]);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const lotRef = useRef(null);
-  const navigate = useNavigate();
-  const isAdmin = profile?.role === "admin";
-
-  async function search(event) {
-    event?.preventDefault();
-    if (!lot.trim()) {
-      setError("Enter a reagent, calibrator, or QC lot number.");
-      lotRef.current?.focus();
-      return;
-    }
-    try {
-      setBusy(true);
-      setError("");
-      const matches = await findBioplexMatches(lot, type, false);
-      setResults(normalizeDashboardResults(matches));
-    } catch (searchError) {
-      setError(searchError.message || "Unable to check this lot number.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function openEditor(target) {
-    navigate(`/bioplex-inventory/lot-expiry-maintenance?lotId=${encodeURIComponent(target.id)}&returnTo=matching-check`);
-  }
-  return <div className="mx-auto max-w-5xl space-y-5"><Link to="/bioplex-inventory" className="-ml-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-slate-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"><ArrowLeft size={18} aria-hidden="true" />Back to BioPlex Management</Link>
-    <header>
-      <p className="text-sm text-blue-400">BioPlex</p>
-      <h1 className="text-3xl font-semibold">Matching Check</h1>
-      <p className="mt-1 text-slate-400">Reagents and calibrators show every active match plus assay-compatible QC. QC searches show the QC material once.</p>
-    </header>
-
-    <form onSubmit={search} className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-5 md:grid-cols-[1fr_13rem_auto]" onInvalidCapture={handleInvalidCapture}>
-      <input ref={lotRef} className={inputClass} value={lot} onChange={(event) => setLot(event.target.value)} placeholder="Enter any lot number"/>
-      <SelectInput className={inputClass} value={type} onChange={(event) => setType(event.target.value)}>
-        <option value="">All material types</option>
-        <option value="kit">Reagent</option>
-        <option value="calibrator">Calibrator</option>
-        <option value="qc">QC</option>
-      </SelectInput>
-      <button disabled={busy} className="inline-flex h-10 items-center justify-center gap-2 self-start rounded-xl bg-blue-600 px-5 py-2 font-medium disabled:opacity-50">
-        <Search size={18}/>{busy ? "Checking..." : "Check"}
-      </button>
-    </form>
-
-    {error && <div className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-300">{error}</div>}
-    {!busy && lot.trim() && !error && !results.length && <div className="rounded-2xl border border-dashed border-slate-700 p-8 text-center text-slate-400">No active BioPlex matching record was found for this lot number.</div>}
-
-    <div className="space-y-3">
-      {results.map((row, index) => <article key={`${row.lot_id}-${row.related_lot_id ?? "none"}-${index}`} className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-sm text-blue-400">{row.assay_name}</p>
-            <h2 className="text-xl font-semibold">{row.product_name || row.material_type}</h2>
-            <p className="mt-1 text-slate-300">Lot {row.lot_number}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="rounded-full bg-emerald-950 px-3 py-1 text-sm text-emerald-300">{row.material_type}</span>
-            {isAdmin && <button type="button" onClick={() => openEditor({ id: row.lot_id, label: `${row.material_type} ${row.lot_number}`, expiryDate: row.expiry_date })} className="inline-flex h-9 items-center gap-2 rounded-lg border border-blue-800 px-3 py-2 text-sm text-blue-300"><CalendarClock size={16}/>Edit expiry</button>}
-          </div>
-        </div>
-        <dl className="mt-4 grid gap-3 sm:grid-cols-3">
-          <Info label="Release date" value={formatBioplexDate(row.release_date) || "Not recorded"}/>
-          <Info label="Expiry date" value={formatBioplexDate(row.expiry_date) || "Not recorded"}/>
-          <Info label="Source import" value={row.source_import_id ? `Import ${row.source_import_id}` : "Manual"}/>
-        </dl>
-        {row.related_lot_id && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-950 p-4">
-          <div>
-            <p className="text-xs uppercase text-slate-500">{row.relationship_type === "assay_related" ? "Assay-compatible QC" : "Matching material"}</p>
-            <p className="mt-1 font-medium">{row.related_material_type}: {row.related_lot_number}</p>
-            <p className="mt-1 text-sm text-slate-400">Expiry: {formatBioplexDate(row.related_expiry_date) || "Not recorded"}</p>
-          </div>
-          {isAdmin && <button type="button" onClick={() => openEditor({ id: row.related_lot_id, label: `${row.related_material_type} ${row.related_lot_number}`, expiryDate: row.related_expiry_date })} className="inline-flex h-9 items-center gap-2 rounded-lg border border-blue-800 px-3 py-2 text-sm text-blue-300"><CalendarClock size={16}/>Edit expiry</button>}
-        </div>}
-      </article>)}
-    </div>
-
-  </div>;
-}
-
-function Info({ label, value }) {
-  return <div><dt className="text-xs uppercase text-slate-500">{label}</dt><dd className="mt-1">{value}</dd></div>;
+const inputClass="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2";
+const today=()=>new Date().toISOString().slice(0,10);
+const name=(lot)=>`${lot.bioplex_assays?.assay_name??"Unknown assay"} · ${lot.material_type} · ${lot.lot_number}`;
+export default function BioplexMatchingCheckPage({profile}){
+ const admin=profile?.role==="admin";
+ const [lots,setLots]=useState([]),[relationships,setRelationships]=useState([]),[query,setQuery]=useState(""),[assay,setAssay]=useState("All"),[type,setType]=useState("All"),[status,setStatus]=useState("All"),[usage,setUsage]=useState("All"),[selectedId,setSelectedId]=useState(null),[preview,setPreview]=useState(null),[events,setEvents]=useState([]),[dialog,setDialog]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState("");
+ const load=useCallback(async()=>{try{setBusy(true);setError("");const [all,snapshot]=await Promise.all([getBioplexLotsForMaintenance(),getActiveBioplexMatchingSnapshot()]);setLots(all);setRelationships(snapshot.relationships??[]);}catch(e){setError(e.message||"Unable to load BioPlex lots.");}finally{setBusy(false);}},[]);
+ useEffect(()=>{load();},[load]);
+ const selected=lots.find(x=>x.id===selectedId)??null;
+ const assays=useMemo(()=>[...new Set(lots.map(x=>x.bioplex_assays?.assay_name).filter(Boolean))].sort(),[lots]);
+ const related=useMemo(()=>selected?relationships.filter(x=>x.from_lot_id===selected.id||x.to_lot_id===selected.id):[],[relationships,selected]);
+ const filtered=useMemo(()=>lots.filter(lot=>{const q=query.trim().toLowerCase(),text=[lot.lot_number,lot.material_type,lot.bioplex_assays?.assay_name,lot.bioplex_products?.product_name,lot.bioplex_products?.product_code].join(" ").toLowerCase(),expired=lot.expiry_date&&lot.expiry_date<today(),legacy=/-[a-z]$/i.test(lot.normalized_lot_number??"")&&Number(lot.stock_count_usage_count??0)===0;return(!q||text.includes(q))&&(assay==="All"||lot.bioplex_assays?.assay_name===assay)&&(type==="All"||lot.material_type===type)&&(status==="All"||(status==="Active"&&lot.is_active)||(status==="Inactive"&&!lot.is_active)||(status==="Current"&&!expired)||(status==="Expired"&&expired)||(status==="Possible legacy CD BN"&&legacy))&&(usage==="All"||(usage==="Used"&&Number(lot.stock_count_usage_count)>0)||(usage==="Unused"&&Number(lot.stock_count_usage_count)===0)||(usage==="Related"&&Number(lot.relationship_count)>0)||(usage==="Unrelated"&&Number(lot.relationship_count)===0));}),[lots,query,assay,type,status,usage]);
+ async function choose(lot){setSelectedId(lot.id);setPreview(null);setEvents([]);try{const [p,e]=await Promise.all([previewBioplexLotCleanup(lot.id),getBioplexLotEvents(lot.id)]);setPreview(p);setEvents(e);}catch(err){setError(err.message||"Unable to load lot details.");}}
+ async function submit(){if(!dialog?.reason?.trim()){setError("Enter a reason.");return;}const word=dialog.kind==="expiry"?null:`${dialog.kind==="delete"?"DELETE":"DEACTIVATE"} ${selected.lot_number}`;if(word&&dialog.confirmation!==word){setError(`Type ${word} to confirm.`);return;}try{setBusy(true);setError("");if(dialog.kind==="expiry")await correctBioplexLotExpiry(selected.id,dialog.expiry,dialog.reason,selected.updated_at);else if(dialog.kind==="delete")await deleteUnusedBioplexLot(selected.id,dialog.reason,selected.updated_at);else await deactivateBioplexLot(selected.id,dialog.reason,selected.updated_at);setDialog(null);setSelectedId(null);setPreview(null);await load();}catch(err){setError(err.message||"Unable to complete lot maintenance.");}finally{setBusy(false);}}
+ return <div className="mx-auto max-w-7xl space-y-5">
+  <Link to="/bioplex-inventory" className="inline-flex items-center gap-2 rounded-xl border border-slate-700 px-3 py-2 text-sm"><ArrowLeft size={18}/>Back to BioPlex Management</Link>
+  <header className="flex flex-col justify-between gap-3 md:flex-row md:items-end"><div><p className="text-sm text-blue-400">BioPlex</p><h1 className="text-3xl font-semibold">Lot Management</h1><p className="mt-1 text-slate-400">Matching check, lot inventory, expiry correction, and guarded maintenance in one place.</p></div><button disabled={busy} onClick={load} className="inline-flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-2"><RefreshCw size={17}/>Refresh</button></header>
+  {error&&<div className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-300">{error}</div>}
+  <section className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-4 md:grid-cols-2 xl:grid-cols-6"><label className="xl:col-span-2">Search<div className="relative mt-2"><Search size={18} className="absolute left-3 top-2.5 text-slate-500"/><input className={`${inputClass} pl-10`} value={query} onChange={e=>setQuery(e.target.value)} placeholder="Lot, assay, product, or code"/></div></label><label>Assay<SelectInput className={`${inputClass} mt-2`} value={assay} onChange={e=>setAssay(e.target.value)}><option>All</option>{assays.map(x=><option key={x}>{x}</option>)}</SelectInput></label><label>Material<SelectInput className={`${inputClass} mt-2`} value={type} onChange={e=>setType(e.target.value)}><option>All</option><option value="kit">Kit</option><option value="calibrator">Calibrator</option><option value="qc">QC</option></SelectInput></label><label>Status<SelectInput className={`${inputClass} mt-2`} value={status} onChange={e=>setStatus(e.target.value)}><option>All</option><option>Active</option><option>Inactive</option><option>Current</option><option>Expired</option><option>Possible legacy CD BN</option></SelectInput></label><label>Usage<SelectInput className={`${inputClass} mt-2`} value={usage} onChange={e=>setUsage(e.target.value)}><option>All</option><option>Used</option><option>Unused</option><option>Related</option><option>Unrelated</option></SelectInput></label></section>
+  <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,1fr)]"><section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900"><p className="border-b border-slate-800 px-4 py-3 text-sm text-slate-400">Showing {filtered.length} of {lots.length} lots</p><div className="max-h-[65vh] overflow-auto"><table className="min-w-full text-sm"><thead className="sticky top-0 bg-slate-950 text-left text-slate-400"><tr><th className="p-3">Assay</th><th className="p-3">Type</th><th className="p-3">Lot</th><th className="p-3">Expiry</th><th className="p-3">State</th><th className="p-3">Usage</th></tr></thead><tbody>{filtered.map(lot=><tr key={lot.id} onClick={()=>choose(lot)} className={`cursor-pointer border-t border-slate-800 hover:bg-slate-800/60 ${selectedId===lot.id?"bg-slate-800":""}`}><td className="p-3">{lot.bioplex_assays?.assay_name}</td><td className="p-3 capitalize">{lot.material_type}</td><td className="p-3 font-medium">{lot.lot_number}</td><td className="p-3">{formatBioplexDate(lot.expiry_date)||"Missing"}</td><td className="p-3">{lot.is_active?"Active":"Inactive"}</td><td className="p-3">{lot.stock_count_usage_count??0} counts · {lot.relationship_count??0} links</td></tr>)}</tbody></table></div></section>
+  <aside className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900 p-5">{!selected?<p className="text-slate-500">Select a lot to inspect relationships, usage, history, and maintenance options.</p>:<><div><p className="text-sm text-blue-400">Selected lot</p><h2 className="text-xl font-semibold">{name(selected)}</h2><p className="text-sm text-slate-400">Expires {formatBioplexDate(selected.expiry_date)||"not recorded"}</p></div><section><h3 className="flex items-center gap-2 font-semibold"><Link2 size={17}/>Relationships ({related.length})</h3>{related.length?related.map(x=><p key={x.id} className="mt-2 rounded-lg border border-slate-800 p-3 text-sm">{x.from_lot_number} → {x.to_lot_number}<span className="block text-slate-500">{x.relationship_type}</span></p>):<p className="mt-2 text-sm text-slate-500">No stored relationships.</p>}</section>{preview&&<section className="rounded-xl border border-slate-800 p-3 text-sm"><h3 className="font-semibold">Maintenance preview</h3><p className="mt-2">Stock-count references: {preview.stock_count_usage_count??0}</p><p>Snapshot matches: {preview.snapshot_usage_count??0}</p><p>Relationships: {preview.relationship_count??0}</p><p className={preview.can_delete?"text-emerald-300":"text-amber-300"}>{preview.can_delete?"Permanent deletion allowed":preview.delete_block_reason}</p></section>}{admin&&<div className="flex flex-wrap gap-2"><button onClick={()=>setDialog({kind:"expiry",expiry:selected.expiry_date||"",reason:""})} className="inline-flex items-center gap-2 rounded-xl border border-blue-800 px-3 py-2 text-blue-300"><CalendarClock size={16}/>Correct expiry</button>{selected.is_active&&<button onClick={()=>setDialog({kind:"deactivate",reason:"",confirmation:""})} className="rounded-xl border border-amber-800 px-3 py-2 text-amber-300">Deactivate</button>}<button disabled={!preview?.can_delete} onClick={()=>setDialog({kind:"delete",reason:"",confirmation:""})} className="inline-flex items-center gap-2 rounded-xl border border-red-800 px-3 py-2 text-red-300 disabled:opacity-40"><Trash2 size={16}/>Delete unused</button></div>}{events.length>0&&<section><h3 className="font-semibold">Expiry history</h3>{events.slice(0,5).map(x=><p key={x.id} className="mt-2 text-sm text-slate-400">{formatBioplexDate(x.previous_expiry_date)||"Blank"} → {formatBioplexDate(x.new_expiry_date)||"Blank"}: {x.reason}</p>)}</section>}</>}</aside></div>
+  {dialog&&selected&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"><div className="w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-6"><h2 className="text-xl font-semibold">{dialog.kind==="expiry"?"Correct expiry date":dialog.kind==="delete"?"Delete unused lot":"Deactivate lot"}</h2><p className="mt-1 text-slate-400">{name(selected)}</p>{dialog.kind==="expiry"&&<label className="mt-5 block">New expiry<input type="date" className={`${inputClass} mt-2`} value={dialog.expiry} onChange={e=>setDialog(v=>({...v,expiry:e.target.value}))}/></label>}<label className="mt-4 block">Reason<textarea rows={3} className={`${inputClass} mt-2`} value={dialog.reason} onChange={e=>setDialog(v=>({...v,reason:e.target.value}))}/></label>{dialog.kind!=="expiry"&&<label className="mt-4 block">Type <strong>{`${dialog.kind==="delete"?"DELETE":"DEACTIVATE"} ${selected.lot_number}`}</strong><input className={`${inputClass} mt-2`} value={dialog.confirmation} onChange={e=>setDialog(v=>({...v,confirmation:e.target.value}))}/></label>}<div className="mt-5 flex justify-end gap-2"><button onClick={()=>setDialog(null)} className="rounded-xl border border-slate-700 px-4 py-2">Cancel</button><button disabled={busy} onClick={submit} className="rounded-xl bg-blue-600 px-4 py-2">Confirm</button></div></div></div>}
+ </div>;
 }

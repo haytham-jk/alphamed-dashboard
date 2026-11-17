@@ -1,9 +1,10 @@
 import SelectInput from "../components/ui/SelectInput";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Check, ChevronDown, ChevronUp, Save, Upload, XCircle } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, ChevronUp, Save, Trash2, Upload, XCircle } from "lucide-react";
 import {
   bulkUpdateBioplexImportRows,
+  cancelBioplexMatchingImport,
   commitBioplexImport,
   getActiveBioplexMatchingSnapshot,
   getBioplexImport,
@@ -228,6 +229,16 @@ export default function BioplexMatchingImportReviewPage() {
     }
   }
 
+  async function cancelReview() {
+    if (!importRecord || !["Review", "Ready"].includes(importRecord.status)) { setError("Only a pending BioPlex import review can be cancelled."); return; }
+    if (!window.confirm(`Cancel import review ${importId}? This deletes only staged review rows. No active BioPlex lots or relationships will be changed.`)) return;
+    try {
+      setBusy(true); setError("");
+      await cancelBioplexMatchingImport(importId, importRecord.review_version);
+      navigate("/bioplex-matching-imports", { state: { message: "BioPlex import review cancelled." } });
+    } catch (cancelError) { setError(cancelError.message || "Unable to cancel this import review."); }
+    finally { setBusy(false); }
+  }
   async function commitImport() {
     if (blockingRows.length) {
       setError(`Resolve or exclude ${blockingRows.length} blocking row${blockingRows.length === 1 ? "" : "s"} before importing.`);
@@ -256,7 +267,7 @@ export default function BioplexMatchingImportReviewPage() {
         throw new Error(`The database still has ${databaseBlockers.length} blocking row${databaseBlockers.length === 1 ? "" : "s"}. First blocker: ${first.sheet_name}:${first.source_row_number}, ${first.review_status}, action ${first.proposed_action}.`);
       }
       await commitBioplexImport(importId, importRecord.review_version);
-      navigate("/bioplex-matching-check", { state: { message: "BioPlex matching data imported successfully." } });
+      navigate("/bioplex-inventory", { state: { message: "BioPlex matching data imported successfully." } });
     } catch (commitError) {
       setError(commitError.message || "Unable to commit the matching import.");
     } finally {
@@ -312,6 +323,7 @@ export default function BioplexMatchingImportReviewPage() {
       <button disabled={busy || !selected.size} onClick={() => bulkAction("Exclude")} className="ml-auto inline-flex items-center gap-2 rounded-xl border border-red-800 px-4 py-2 text-red-300 disabled:opacity-40"><XCircle size={17}/>Exclude selected</button>
       <button disabled={busy || !selected.size} onClick={() => bulkAction("Skip duplicate")} className="rounded-xl border border-amber-800 px-4 py-2 text-amber-300 disabled:opacity-40">Skip as duplicates</button>
       <button disabled={busy || !selected.size} onClick={() => bulkAction("Accept")} className="inline-flex items-center gap-2 rounded-xl border border-emerald-800 px-4 py-2 text-emerald-300 disabled:opacity-40"><Check size={17}/>Accept selected</button>
+      {importRecord && ["Review", "Ready"].includes(importRecord.status) && <button type="button" disabled={busy} onClick={cancelReview} className="inline-flex items-center gap-2 rounded-xl border border-red-800 px-4 py-2 text-red-300 disabled:opacity-40"><Trash2 size={17}/>Cancel review</button>}
       <button type="button" disabled={busy || blockingRows.length > 0 || importRecord?.review_only || (importRecord?.import_mode === "Replace" && replaceConfirmation !== "REPLACE")} onClick={commitImport} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2 font-medium disabled:cursor-not-allowed disabled:opacity-50"><Upload size={18}/>Final import</button>
     </section>
 

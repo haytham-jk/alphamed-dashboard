@@ -32,6 +32,8 @@ export default function EditAssetPage() {
         setValues({
           expectedUpdatedAt: asset.updated_at || "",
           customerId: String(asset.customer_id || ""),
+          originalCustomerId: String(asset.customer_id || ""),
+          assignmentReason: "",
           instrumentType: knownType ? asset.instrument_name : "Other",
           customInstrumentName: knownType ? "" : asset.instrument_name || "",
           serialNumber: asset.serial_number || "",
@@ -151,6 +153,9 @@ export default function EditAssetPage() {
           </SelectInput>
         </label>
 
+        {values.customerId !== values.originalCustomerId && (
+          <label className="md:col-span-2">Customer assignment reason<input required className={inputClass} value={values.assignmentReason} onChange={(event) => patch("assignmentReason", event.target.value)} placeholder="Reason for transfer or unassignment" /></label>
+        )}
         <label>
           Instrument type
           <SelectInput

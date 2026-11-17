@@ -1,0 +1,2 @@
+import test from "node:test";import assert from "node:assert/strict";import{sourceMatchesInstrument}from"../src/utils/caseInstrumentMatching.js";
+test("Evolis and ETP map only to their intended assets",()=>{assert.equal(sourceMatchesInstrument("Evolis","EVOLIS Premium"),true);assert.equal(sourceMatchesInstrument("Evolis","EVOLIS Twin plus"),false);assert.equal(sourceMatchesInstrument("ETP","EVOLIS Twin plus"),true);assert.equal(sourceMatchesInstrument("ETP","EVOLIS Premium"),false);});

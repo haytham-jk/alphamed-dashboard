@@ -21,6 +21,31 @@ function directionFor(row) {
   return { fromType: materialType, fromLot: lot, toType: relatedType, toLot: relatedLot };
 }
 
+export function filterCurrentBioplexImportRows(rows) {
+  const currentRows = (rows ?? []).filter((row) => !["Excluded", "Invalid"].includes(row.reviewStatus));
+  const survivingRelationshipCalibrators = new Set(currentRows.flatMap((row) => {
+    const direction = directionFor(row);
+    if (!direction || direction.fromType !== "kit" || direction.toType !== "calibrator") return [];
+    const assay = row.assayNameNormalized ?? row.assay_name_normalized;
+    return [materialKey(assay, "calibrator", direction.toLot)];
+  }));
+  const currentMaterials = new Set(currentRows.map((row) => materialKey(
+    row.assayNameNormalized ?? row.assay_name_normalized,
+    row.materialType ?? row.material_type,
+    row.lotNumberNormalized ?? row.lot_number_normalized
+  )));
+  return currentRows.filter((row) => {
+    const assay = row.assayNameNormalized ?? row.assay_name_normalized;
+    const type = normalized(row.materialType ?? row.material_type).toLowerCase();
+    const lot = row.lotNumberNormalized ?? row.lot_number_normalized;
+    const direction = directionFor(row);
+    if (type === "calibrator" && !survivingRelationshipCalibrators.has(materialKey(assay, "calibrator", lot))) return false;
+    if (!direction) return true;
+    return currentMaterials.has(materialKey(assay, direction.fromType, direction.fromLot))
+      && currentMaterials.has(materialKey(assay, direction.toType, direction.toLot));
+  });
+}
+
 export function buildParsedReviewModel(rows, snapshot = { lots: [], relationships: [] }) {
   const activeLots = new Map((snapshot.lots ?? []).map((lot) => [materialKey(lot.assay_name, lot.material_type, lot.normalized_lot_number), lot]));
   const activeRelationships = new Set((snapshot.relationships ?? []).map((item) => relationshipKey(item.assay_name, item.from_material_type, item.from_lot_number, item.to_material_type, item.to_lot_number)));

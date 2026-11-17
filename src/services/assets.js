@@ -90,22 +90,15 @@ function assetPayload(values) {
     installation_date: values.installationDate || null,
     is_active: values.isActive,
     notes: values.notes.trim() || null,
+    assignment_reason: String(values.assignmentReason ?? "").trim() || null,
   };
 }
 
 export async function createAsset(values) {
-  if (!values.instrumentName.trim()) {
-    throw new Error("An instrument type is required.");
-  }
-
-  const { data, error } = await supabase
-    .from("instruments")
-    .insert(assetPayload(values))
-    .select("id")
-    .single();
-
+  if (!values.instrumentName.trim()) throw new Error("An instrument type is required.");
+  const { data, error } = await supabase.rpc("create_asset_atomic", { p_values: assetPayload(values) });
   if (error) throw error;
-  return data;
+  return { id: Number(data) };
 }
 
 export async function updateAsset(assetId, values) {
@@ -133,4 +126,19 @@ export async function getInstrumentsForCustomers(customerIds, { signal } = {}) {
   const { data, error } = await request;
   if (error) throw error;
   return data || [];
+}
+
+export async function getAssetDetails(assetId, { signal } = {}) {
+  const id = Number(assetId);
+  if (!Number.isFinite(id)) throw new Error("Invalid asset ID.");
+  let request = supabase.rpc("get_asset_details_v3", { p_asset_id: id });
+  if (signal) request = request.abortSignal(signal);
+  const { data, error } = await request;
+  if (error) throw error;
+  if (!data?.asset) throw new Error("Asset was not found or is not available.");
+  return {
+    asset: data.asset,
+    cases: Array.isArray(data.cases) ? data.cases : [],
+    ownership: Array.isArray(data.ownership) ? data.ownership : [],
+  };
 }
